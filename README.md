@@ -86,6 +86,22 @@ zap about --output json
 
 If global linking is not configured on your machine, use `node dist/cli.js ...`.
 
+## Using With an Agent
+
+You do not need to memorize every `zap` command. If you are working with an AI coding agent or terminal agent that can read this repository, you can write a plain-language request and let the agent choose the right install, search, sync, inspect, watchlist, or export commands.
+
+Examples:
+
+```text
+Download and install the ZAP CLI, then search ZAP for iPhone 17 options and export the useful results as CSV.
+```
+
+```text
+Use this package to inspect model 1253558, rank the observed offers, and give me JSON plus a short human summary.
+```
+
+The CLI is designed for that workflow: command schemas are available through `zap schema`, output is JSON-first, errors have a stable JSON envelope, and every command is non-interactive.
+
 ## Quick Start
 
 ```bash
@@ -278,6 +294,22 @@ zap about --output json
 ```
 
 אם הקישור הגלובלי לא מוגדר במחשב, השתמשו ב-`node dist/cli.js ...`.
+
+## שימוש עם סוכן AI
+
+אין צורך לזכור את כל פקודות `zap`. אם אתם עובדים עם סוכן AI או סוכן טרמינל שיכול לקרוא את המאגר הזה, אפשר לכתוב בקשה בשפה רגילה והסוכן יבחר את פקודות ההתקנה, החיפוש, הסנכרון, בדיקת המוצר, רשימת המעקב או הייצוא המתאימות.
+
+דוגמאות:
+
+```text
+תוריד ותתקין את ZAP CLI, חפש ב-ZAP אפשרויות ל-iPhone 17, וייצא את התוצאות השימושיות ל-CSV.
+```
+
+```text
+השתמש בחבילה הזאת כדי לבדוק את model 1253558, לדרג את ההצעות שנמצאו, ולהחזיר JSON יחד עם סיכום קצר.
+```
+
+ה-CLI בנוי בדיוק לשימוש כזה: סכמות פקודה זמינות דרך `zap schema`, הפלט מכוון ל-JSON, שגיאות חוזרות במבנה JSON יציב, וכל הפקודות לא אינטראקטיביות.
 
 ## התחלה מהירה
 
