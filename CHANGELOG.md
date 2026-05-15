@@ -9,3 +9,4 @@
 - Added product/search URL generation without fetching blocked pages.
 - Added command schema introspection.
 - Added tests, docs, and CI-ready scripts.
+- Added agent recon notes and a draft `zap-cli` usage skill.
