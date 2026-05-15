@@ -1,0 +1,14 @@
+src/
+test/
+coverage/
+.github/
+.env
+.env.*
+*.log
+playwright/.auth/
+cookies.json
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+tsconfig.json
+vitest.config.ts

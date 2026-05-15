@@ -1,0 +1,35 @@
+{
+  "name": "zap-cli",
+  "version": "0.1.0",
+  "description": "Consent-safe consumer CLI for zap.co.il shopping research.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "zap": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  }
+}
