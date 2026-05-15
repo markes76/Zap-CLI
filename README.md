@@ -4,11 +4,13 @@ Consent-safe consumer CLI for [zap.co.il](https://www.zap.co.il/), built for hum
 
 This project follows the spirit of [mvanhorn/cli-printing-press](https://github.com/mvanhorn/cli-printing-press): JSON-first command output, local SQLite/FTS sync, schema introspection, clear exit codes, and docs that stay current with the CLI.
 
+The intended agent direction is adaptive but reviewable: local preference memory, diagnostics, skill-update proposals, and code fixes that go through tests and PRs. The CLI should not silently rewrite itself, shared skills, or user data.
+
 ## Safety Model
 
 `zap` is intentionally conservative:
 
-- Fetches official ZAP RSS feeds and one explicit public product page when `product inspect --model-id` is used.
+- Fetches official ZAP RSS feeds and one explicit public product page when `product inspect --model-id` or `product offers --model-id` is used.
 - Generates product and search handoff URLs without fetching blocked search, filter, sort, account, checkout, redirect, or tracking endpoints.
 - Stores watchlists and synced search data locally.
 - Does not use browser cookies, session extraction, HAR reverse engineering, checkout automation, or private APIs.
@@ -56,6 +58,7 @@ zap search local "iphone 17" --category electric --sort relevance --limit 10
 zap search suggest "iphone 17" --limit 5
 zap product url --model-id 1253558
 zap product inspect --model-id 1253558
+zap product offers --model-id 1253558 --limit 20 --output json
 zap search url "iphone 17"
 zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17"
 zap watch list

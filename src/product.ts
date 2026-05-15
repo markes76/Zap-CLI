@@ -182,7 +182,7 @@ function findAggregateOffer(product: JsonRecord): JsonRecord | undefined {
     if (!isRecord(candidate)) {
       continue;
     }
-    if (hasSchemaType(candidate, "AggregateOffer") || hasAny(candidate, ["lowPrice", "highPrice", "offerCount", "offers"])) {
+    if (hasSchemaType(candidate, "AggregateOffer") || hasSchemaType(candidate, "Offer") || hasAny(candidate, ["lowPrice", "highPrice", "offerCount", "offers", "price", "seller"])) {
       return candidate;
     }
   }
@@ -200,8 +200,11 @@ function normalizeAggregateOffer(aggregate: JsonRecord | undefined): ProductAggr
   assignNumber(normalized, "offerCount", numericValue(aggregate.offerCount));
   assignText(normalized, "priceCurrency", asText(aggregate.priceCurrency));
 
-  const offers = toArray(aggregate.offers)
-    .flatMap((offer) => normalizeOffer(offer))
+  const aggregateCurrency = asText(aggregate.priceCurrency);
+  const nestedOffers = toArray(aggregate.offers);
+  const offerValues = nestedOffers.length > 0 ? nestedOffers : isOfferLike(aggregate) ? [aggregate] : [];
+  const offers = offerValues
+    .flatMap((offer) => normalizeOffer(offer, aggregateCurrency))
     .filter((offer) => Object.keys(offer).length > 0);
   if (offers.length > 0) {
     normalized.offers = offers;
@@ -210,7 +213,7 @@ function normalizeAggregateOffer(aggregate: JsonRecord | undefined): ProductAggr
   return normalized;
 }
 
-function normalizeOffer(value: unknown): ProductOffer[] {
+function normalizeOffer(value: unknown, defaultCurrency = ""): ProductOffer[] {
   if (!isRecord(value)) {
     return [];
   }
@@ -218,10 +221,14 @@ function normalizeOffer(value: unknown): ProductOffer[] {
   const offer: ProductOffer = {};
   assignText(offer, "sellerName", namedValue(value.seller));
   assignNumber(offer, "price", numericValue(value.price));
-  assignText(offer, "priceCurrency", asText(value.priceCurrency));
+  assignText(offer, "priceCurrency", firstText(asText(value.priceCurrency), defaultCurrency));
   assignText(offer, "availability", asText(value.availability));
   assignText(offer, "url", safeHttpUrl(asText(value.url)));
   return [offer];
+}
+
+function isOfferLike(record: JsonRecord): boolean {
+  return hasSchemaType(record, "Offer") || hasAny(record, ["price", "seller"]);
 }
 
 function extractVendorCards(html: string): ProductVendorCard[] {

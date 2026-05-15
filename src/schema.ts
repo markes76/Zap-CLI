@@ -81,6 +81,14 @@ export const commandSchemas: CommandSchema[] = [
     safety: "Fetches only https://www.zap.co.il/model.aspx?modelid=<id> after numeric model-id validation; no cookies, auth, redirects, search, filters, ordering, or hidden API crawling."
   },
   {
+    key: "product-offers",
+    name: "product offers",
+    description: "Fetch one public ZAP product page and rank offer-like static metadata.",
+    usage: "zap product offers --model-id 1253558 --limit 20 --output json",
+    output: "Product offer ranking envelope with schemaVersion, recordType=product_offers, source product metadata, rankingPolicy, rankedOffers, and warnings. Import type and warranty stay unspecified unless explicitly observed.",
+    safety: "Fetches only https://www.zap.co.il/model.aspx?modelid=<id> after numeric model-id validation; ranks only JSON-LD offers and reliable static vendor-card metadata; no redirects, hidden API calls, cookies, checkout, or offer-link resolution."
+  },
+  {
     key: "search-url",
     name: "search url",
     description: "Generate the official ZAP search URL without fetching it.",

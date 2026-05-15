@@ -9,6 +9,8 @@
 - Added `watch export` for JSON and CSV local watchlist exports, with notes excluded unless `--include-notes` is used.
 - Added `--out <path>` exact-file output for export commands, with no overwrite of existing files or the active cache database.
 - Added `cache info` for read-only local cache inspection.
+- Added `product offers` for consent-safe ranking from one explicit product page's static offer metadata.
+- Documented the future self-evolving agent model as local preference memory, diagnostics, reviewable skill updates, and PR-based code improvements.
 
 ## 0.1.0 - Private Bootstrap
 

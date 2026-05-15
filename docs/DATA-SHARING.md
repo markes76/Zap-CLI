@@ -244,20 +244,28 @@ Design:
 - Capture `observedAt` and source URL for every field that comes from a fetched product page.
 - Unknown or unavailable fields are `null`, not inferred.
 
-### Vendor Offers Export
+### Product Offers
 
-Export offers observed during a product inspection.
+Rank offer-like data observed during an explicit product-page inspection.
+
+```bash
+zap product offers --model-id 1253558 --limit 20 --output json
+```
+
+Current behavior:
+
+- Fetches only the explicit `model.aspx?modelid=<id>` product page, with no credentials and redirects disabled.
+- Ranks only observed JSON-LD offers and reliable static vendor-card metadata.
+- Ranking prefers lower price, then vendor rating, then review count.
+- `--limit` bounds the number of ranked rows returned.
+- `importType` remains `unspecified`; official import, warranty, stock certainty, checkout totals, and vendor redirect targets are not inferred.
+
+Future export examples:
 
 ```bash
 zap product offers --model-id 1253558 --from-inspection exports/products/zap-product-1253558-inspection-20260515T083000Z.json --output ndjson --out exports/offers/zap-offers-1253558-20260515T083000Z.ndjson
 zap product offers --model-id 1253558 --from-inspection exports/products/zap-product-1253558-inspection-20260515T083000Z.json --output csv --out exports/offers/zap-offers-1253558-20260515T083000Z.csv
 ```
-
-Design:
-
-- `product offers` should not re-fetch by default when `--from-inspection` is provided.
-- Ranking fields are local derivations from inspected offers.
-- Vendor redirect links remain handoff URLs and are not resolved.
 
 ### Procurement Reports
 
