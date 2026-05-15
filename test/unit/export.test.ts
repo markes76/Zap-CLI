@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -260,6 +260,142 @@ describe("export commands", () => {
         notes: 'line 1\nline "2"'
       })
     ]);
+  });
+
+  it("writes feed export output to a file and returns a status envelope", async () => {
+    const dir = tempCacheDir(dirs);
+    const outPath = join(dir, "exports", "feed.csv");
+    const fetchMock = vi.fn(async () => new Response(rssXml([rssItem("1264897", "Wiim Mini")]), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["feed", "export", "--category", "electric", "--limit", "1", "--output", "csv", "--out", outPath], {
+      stdoutIsTTY: true
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      outputPath: outPath,
+      format: "csv",
+      recordType: "rss_item",
+      itemCount: 1,
+      bytes: expect.any(Number)
+    });
+    expect(readFileSync(outPath, "utf8")).toContain("zap.rss-item.v1,rss_item,electric");
+  });
+
+  it("writes export files quietly when --quiet is used", async () => {
+    const dir = tempCacheDir(dirs);
+    const outPath = join(dir, "exports", "feed.json");
+    const fetchMock = vi.fn(async () => new Response(rssXml([rssItem("1264897", "Wiim Mini")]), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["feed", "export", "--category", "electric", "--limit", "1", "--output", "json", "--out", outPath, "--quiet"], {
+      stdoutIsTTY: true
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("");
+    expect(JSON.parse(readFileSync(outPath, "utf8"))).toEqual(expect.objectContaining({ recordType: "rss_item" }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes watch export JSON without notes by default", async () => {
+    const dir = tempCacheDir(dirs);
+    seedWatchItem(dir, { title: "iPhone 17", notes: "private note" });
+    const outPath = join(dir, "exports", "watch.json");
+
+    const result = await runCli(["watch", "export", "--output", "json", "--out", outPath], cliContext(dir));
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(expect.objectContaining({ outputPath: outPath, format: "json", recordType: "watch_item", itemCount: 1 }));
+    const written = JSON.parse(readFileSync(outPath, "utf8"));
+    expect(written.notesIncluded).toBe(false);
+    expect(written.items[0].notes).toBeNull();
+  });
+
+  it("rejects --out for non-export commands before running them", async () => {
+    const dir = tempCacheDir(dirs);
+    const outPath = join(dir, "about.json");
+
+    const result = await runCli(["about", "--out", outPath, "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(2);
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: "--out is only supported for export commands.",
+        hint: "Use feed export or watch export."
+      }
+    });
+    expect(existsSync(outPath)).toBe(false);
+  });
+
+  it("rejects an empty --out value before fetching", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["feed", "export", "--category", "electric", "--output", "json", "--out="], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(2);
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: "--out requires a non-empty path.",
+        hint: "Use --out <path>."
+      }
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty --out on non-export commands before running them", async () => {
+    const result = await runCli(["about", "--out=", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(2);
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: "--out is only supported for export commands.",
+        hint: "Use feed export or watch export."
+      }
+    });
+  });
+
+  it("does not overwrite an existing export file", async () => {
+    const dir = tempCacheDir(dirs);
+    const outPath = join(dir, "feed.csv");
+    writeFileSync(outPath, "existing\n", "utf8");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["feed", "export", "--category", "electric", "--output", "csv", "--out", outPath], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(2);
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: `Output path already exists: ${outPath}.`,
+        hint: "Choose a new path; overwriting is not supported."
+      }
+    });
+    expect(readFileSync(outPath, "utf8")).toBe("existing\n");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects --out paths that target the active cache database", async () => {
+    const dir = tempCacheDir(dirs);
+    const cacheFile = join(dir, "zap.sqlite");
+
+    const result = await runCli(["watch", "export", "--output", "json", "--out", cacheFile], cliContext(dir));
+
+    expect(result.exitCode).toBe(2);
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: "--out must not target the active cache database.",
+        hint: "Choose a separate export file path."
+      }
+    });
+    expect(existsSync(cacheFile)).toBe(false);
   });
 
   it("filters export item fields with --select so notes are not leaked", async () => {

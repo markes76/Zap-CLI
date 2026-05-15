@@ -24,7 +24,7 @@ This document defines how `zap` should share data with humans, scripts, and agen
 ## Core Decisions
 
 - Existing command output remains compatible: `--output json|text|ndjson`, default JSON when stdout is not a TTY, and JSON error envelopes on stderr.
-- Current export commands write to stdout. `--out <path>` is a future file-output feature.
+- Current export commands write to stdout or to a local file with `--out <path>`.
 - JSON is the canonical lossless format for all entities and reports.
 - NDJSON is the canonical streaming format for homogeneous row collections such as RSS items, watch items, and vendor offers.
 - Markdown is the default human report format for review in Git, issues, and agent transcripts.
@@ -169,7 +169,7 @@ Add for export/report commands:
 --schema-version v1
 ```
 
-Current export commands support only the formats listed in their schemas. `feed export` supports `json|ndjson|csv`; `watch export` supports `json|csv`. `--out`, `--privacy`, Markdown, HTML, and report exports remain future work.
+Current export commands support only the formats listed in their schemas. `feed export` supports `json|ndjson|csv`; `watch export` supports `json|csv`. `--privacy`, Markdown, HTML, and report exports remain future work.
 For JSON export envelopes, `--select` applies to `items` while preserving envelope metadata. For NDJSON and CSV exports, `--select` applies to row fields.
 
 Defaults:
@@ -189,6 +189,7 @@ Export official RSS items from one live bounded official RSS category feed.
 zap feed export --category electric --limit 50 --output json
 zap feed export --category electric --limit 50 --output ndjson
 zap feed export --category electric --limit 50 --output csv
+zap feed export --category electric --limit 50 --output csv --out exports/rss/zap-rss-electric-20260515T083000Z.csv
 ```
 
 Current behavior:
@@ -196,7 +197,8 @@ Current behavior:
 - `--category` fetches the official RSS feed, like `feed list`.
 - JSON output uses an envelope with `items`.
 - NDJSON/CSV output emits rows.
-- `--out`, `--from-cache`, and `--query` are future features.
+- `--out <path>` writes the rendered export artifact to that exact file path and returns a JSON status object. Existing files and the active cache database are not overwritten.
+- `--from-cache` and `--query` are future features.
 
 ### Watch Export
 
@@ -206,6 +208,7 @@ Export local watchlist state.
 zap watch export --output json
 zap watch export --output csv
 zap watch export --output csv --include-notes
+zap watch export --output json --out exports/watch/zap-watchlist-20260515T083000Z.json
 ```
 
 Design:
@@ -213,7 +216,8 @@ Design:
 - Default export excludes `notes`.
 - `--include-notes` includes freeform notes and sets `notesIncluded: true` in the manifest/envelope.
 - CSV includes one row per watch item.
-- Markdown and `--out` are future features.
+- `--out <path>` writes the rendered export artifact to that exact file path and returns a JSON status object. Existing files and the active cache database are not overwritten.
+- Markdown is a future feature.
 
 ### Product Inspection
 
@@ -290,7 +294,7 @@ Design:
 
 ## Filenames and Artifact Layout
 
-Default filenames should be generated only when `--out <directory>` is supplied. If `--out <file>` is supplied, use that exact path.
+Current `--out <path>` behavior treats the value as an exact file path. Directory targets, default filename generation, and overwrite controls are future features.
 
 Rules:
 
@@ -769,7 +773,7 @@ Required for v1:
 - Keep existing JSON and NDJSON command behavior stable.
 - Harden current `feed export` JSON/NDJSON/CSV behavior from official RSS.
 - Harden current `watch export` JSON/CSV behavior with notes excluded by default.
-- Add `--out <path>` to export commands only.
+- Keep `--out <path>` available for export commands only.
 - Document JSON schemas for RSS item and watch item exports.
 - Add tests for stdout export, file export, privacy defaults, and CSV escaping.
 - Keep Markdown/HTML procurement report rendering out of v1 until product inspection and procurement report JSON schemas are stable.

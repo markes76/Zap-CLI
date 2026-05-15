@@ -7,6 +7,8 @@
 - Added `search suggest` for local candidates plus generated ZAP search handoff URLs.
 - Added `feed export` for JSON, NDJSON, and CSV exports from bounded official RSS feeds.
 - Added `watch export` for JSON and CSV local watchlist exports, with notes excluded unless `--include-notes` is used.
+- Added `--out <path>` exact-file output for export commands, with no overwrite of existing files or the active cache database.
+- Added `cache info` for read-only local cache inspection.
 
 ## 0.1.0 - Private Bootstrap
 

@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import type { RssItem, RssSearchOptions, WatchItem, WatchItemInput } from "./types.js";
+import type { CacheCategoryInfo, RssItem, RssSearchOptions, WatchItem, WatchItemInput } from "./types.js";
 import { getProductUrls, validateModelId } from "./urls.js";
 
 export class ZapStore {
@@ -124,6 +124,35 @@ export class ZapStore {
     return rows.map(watchRowToItem);
   }
 
+  countRssItems(): number {
+    const row = this.db.prepare("SELECT COUNT(*) AS count FROM rss_items").get() as unknown as CountRow;
+    return row.count;
+  }
+
+  countWatchItems(): number {
+    const row = this.db.prepare("SELECT COUNT(*) AS count FROM watch_items").get() as unknown as CountRow;
+    return row.count;
+  }
+
+  listRssCategoryInfo(): CacheCategoryInfo[] {
+    const rows = this.db
+      .prepare(
+        `
+        SELECT category, COUNT(*) AS count, MAX(published_at) AS newest_published_at
+        FROM rss_items
+        GROUP BY category
+        ORDER BY category ASC
+      `
+      )
+      .all() as unknown as CategoryInfoRow[];
+
+    return rows.map((row) => ({
+      category: row.category,
+      count: row.count,
+      newestPublishedAt: row.newest_published_at
+    }));
+  }
+
   removeWatchItem(id: string): boolean {
     const result = this.db.prepare("DELETE FROM watch_items WHERE id = ?").run(id);
     return result.changes > 0;
@@ -179,6 +208,16 @@ interface WatchRow {
   spec_url: string;
   notes: string | null;
   created_at: string;
+}
+
+interface CountRow {
+  count: number;
+}
+
+interface CategoryInfoRow {
+  category: string;
+  count: number;
+  newest_published_at: string | null;
 }
 
 function rssRowToItem(row: RssRow): RssItem {

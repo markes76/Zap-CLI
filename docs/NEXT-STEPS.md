@@ -6,23 +6,20 @@ This document tracks recommended project phases after the private bootstrap PR. 
 
 ## Current Position
 
-- Branch: `codex/bootstrap`, tracking `origin/codex/bootstrap`.
+- Branch: `codex/export-out-cache`.
 - Base branch: `main`.
-- Active PR: [#1 `[codex] bootstrap zap cli`](https://github.com/markes76/Zap-CLI/pull/1).
-- PR state at last GitHub inspection: open draft, mergeable, clean merge state, no review decision yet.
-- CI state at last GitHub inspection: `CI / test` completed successfully.
-- Current branch now includes bounded `product inspect --model-id`, updated skill guidance, and data-sharing/export design docs.
+- Main already includes the private bootstrap, offline search expansion, product URL/inspection, watchlist, and stdout export commands.
+- Current branch adds read-only `cache info`, exact-file `--out <path>` for export commands, and matching docs/tests.
 
 ## Recommended Phases
 
-### Phase 0: Bootstrap PR Closure
+### Phase 0: Export and Cache PR Closure
 
-Goal: turn PR #1 from a draft bootstrap into a reviewed private baseline.
+Goal: land the current export/cache polish branch as a small reviewed increment.
 
-- Keep the PR scope as the current bootstrap package, tests, docs, CI, and consent-safe safety model.
-- Request review after confirming the current bootstrap commands still pass local checks.
-- Use review feedback to decide whether PR #1 should remain bootstrap-only or split any follow-up work into new branches.
-- Merge only after CI is green, review is complete, and the PR body reflects the shipped behavior.
+- Keep the scope to `cache info`, export `--out`, schemas, tests, and docs.
+- Confirm bad `--out` paths fail before network fetches or cache writes.
+- Merge only after the local gate and CI are green and the PR body reflects shipped behavior.
 
 ### Phase 1: Product Inspection Hardening
 
@@ -38,9 +35,8 @@ Goal: make the new explicit model-page inspection command reliable enough for pr
 Goal: improve usability without changing the consent boundary.
 
 - Add richer text output for human terminals while preserving JSON/NDJSON defaults for agent usage.
-- Add cache inspection commands.
 - Add command examples to schema output.
-- Add `--out <path>` for export commands.
+- Add explicit overwrite controls only if there is a clear user need; current `--out` never overwrites.
 - Update command schemas, tests, CLI smoke checks, and docs in the same PR as each behavior change.
 
 ### Phase 3: Local Search Expansion

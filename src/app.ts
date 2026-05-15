@@ -1,6 +1,6 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { aboutZapCli } from "./about.js";
 import { categories } from "./categories.js";
 import { CliError, exitCodeFor, toErrorEnvelope } from "./errors.js";
@@ -12,6 +12,8 @@ import { getSchema, listSchemas } from "./schema.js";
 import { buildSearchNextCommands, parseOptionalCategoryFilter, parseSearchSort, parseSyncCategories } from "./search.js";
 import type {
   CliResult,
+  ExportEnvelope,
+  ExportFileResult,
   GlobalOptions,
   OutputFormat,
   RssSearchOptions,
@@ -34,7 +36,17 @@ export async function runCli(argv: string[], context: RunContext = {}): Promise<
 
   try {
     const parsed = parseArgs(argv, stdoutIsTTY, env);
+    const outPath = exportOutputPath(parsed, env);
     const data = await dispatch(parsed, env);
+    if (outPath && isExportEnvelope(data)) {
+      const content = formatExportOutput(data, parsed.global.format, parsed.global.select);
+      const result = writeExportFile(outPath, content, data, parsed.global.format);
+      return {
+        stdout: parsed.global.quiet ? "" : formatOutput(result, { format: "json" }),
+        stderr: "",
+        exitCode: 0
+      };
+    }
     const selected = isExportEnvelope(data) ? data : selectFields(data, parsed.global.select);
     return {
       stdout: parsed.global.quiet ? "" : formatCliOutput(selected, parsed.global.format, parsed.global.select),
@@ -58,6 +70,26 @@ function formatCliOutput(data: unknown, format: OutputFormat, selectedFields?: s
   return formatOutput(data, { format });
 }
 
+function writeExportFile(outPath: string, content: string, envelope: ExportEnvelope, format: OutputFormat): ExportFileResult {
+  const outputPath = resolve(outPath);
+  try {
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, content, { encoding: "utf8", flag: "wx" });
+  } catch (error) {
+    if (isNodeError(error) && error.code === "EEXIST") {
+      throw new CliError("INVALID_ARGUMENTS", `Output path already exists: ${outputPath}.`, "Choose a new path; overwriting is not supported.");
+    }
+    throw new CliError("GENERAL_ERROR", error instanceof Error ? error.message : String(error));
+  }
+  return {
+    outputPath,
+    format,
+    recordType: envelope.recordType,
+    itemCount: envelope.items.length,
+    bytes: Buffer.byteLength(content, "utf8")
+  };
+}
+
 async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unknown> {
   const [noun, verb, ...rest] = parsed.positional;
 
@@ -71,6 +103,11 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
 
   if (noun === "categories" && verb === "list") {
     return { categories };
+  }
+
+  if (noun === "cache" && verb === "info") {
+    ensureNoExtraArgs(rest, "cache info");
+    return readCacheInfo(parsed.global, env);
   }
 
   if (noun === "feed" && verb === "list") {
@@ -435,6 +472,44 @@ function ensureNoExtraArgs(rest: string[], commandName: string): void {
   }
 }
 
+async function readCacheInfo(options: GlobalOptions, env: NodeJS.ProcessEnv) {
+  const path = cachePath(options, env);
+  if (!existsSync(path)) {
+    return {
+      cachePath: path,
+      exists: false,
+      readable: false,
+      rssItemCount: 0,
+      watchItemCount: 0,
+      categories: []
+    };
+  }
+
+  let store: Awaited<ReturnType<typeof openStore>> | undefined;
+  try {
+    store = await openStore(options, env, { readOnly: true });
+    return {
+      cachePath: path,
+      exists: true,
+      readable: true,
+      rssItemCount: store.countRssItems(),
+      watchItemCount: store.countWatchItems(),
+      categories: store.listRssCategoryInfo()
+    };
+  } catch {
+    return {
+      cachePath: path,
+      exists: true,
+      readable: false,
+      rssItemCount: 0,
+      watchItemCount: 0,
+      categories: []
+    };
+  } finally {
+    store?.close();
+  }
+}
+
 function optionalPositiveNumberFromRecord(flags: Record<string, string | boolean>, name: string, defaultValue: number): number {
   const raw = optionalFlagFromRecord(flags, name);
   if (raw === undefined) {
@@ -462,6 +537,45 @@ function outputFormatPolicy(positional: string[]): OutputFormatPolicy {
     return { allowed: ["json", "csv"], commandName: "watch export", defaultFormat: "json" };
   }
   return { allowed: ["json", "text", "ndjson"] };
+}
+
+function isExportCommand(positional: string[]): boolean {
+  const [noun, verb] = positional;
+  return (noun === "feed" && verb === "export") || (noun === "watch" && verb === "export");
+}
+
+function exportOutputPath(parsed: ParsedArgs, env: NodeJS.ProcessEnv): string | undefined {
+  if (!hasFlag(parsed.flags, "out")) {
+    return undefined;
+  }
+
+  if (!isExportCommand(parsed.positional)) {
+    throw new CliError("INVALID_ARGUMENTS", "--out is only supported for export commands.", "Use feed export or watch export.");
+  }
+
+  const outPath = optionalFlagFromRecord(parsed.flags, "out");
+  if (!outPath || outPath.trim().length === 0) {
+    throw new CliError("INVALID_ARGUMENTS", "--out requires a non-empty path.", "Use --out <path>.");
+  }
+
+  const outputPath = resolve(outPath);
+  const activeCachePath = resolve(cachePath(parsed.global, env));
+  if (outputPath === activeCachePath) {
+    throw new CliError("INVALID_ARGUMENTS", "--out must not target the active cache database.", "Choose a separate export file path.");
+  }
+  if (existsSync(outputPath)) {
+    throw new CliError("INVALID_ARGUMENTS", `Output path already exists: ${outputPath}.`, "Choose a new path; overwriting is not supported.");
+  }
+
+  return outputPath;
+}
+
+function hasFlag(flags: Record<string, string | boolean>, name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(flags, name);
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }
 
 function parseOutputFormat(value: string | undefined, policy: OutputFormatPolicy): OutputFormat | undefined {

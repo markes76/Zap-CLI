@@ -7,15 +7,15 @@
 - Ship bounded `product inspect --model-id` for one explicit public product page.
 - Ship `search sync`, `search local`, and `search suggest` for better offline discovery from official RSS/cache data.
 - Ship first export commands for RSS and local watchlist data.
+- Ship export file output and cache inspection.
 - Keep docs and changelog updated with each feature branch.
 - Verify JSON-first behavior for agent usage.
 
 ## v0.2
 
 - Add richer text output for human terminals.
-- Add cache inspection commands.
 - Add command examples to schema output.
-- Add `--out <path>` for export commands.
+- Add cache maintenance commands such as prune/clear with explicit confirmation.
 
 ## v0.3 Procurement Research
 
