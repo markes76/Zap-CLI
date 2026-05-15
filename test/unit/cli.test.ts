@@ -412,6 +412,188 @@ describe("runCli", () => {
     );
   });
 
+  it("ranks product offers from one validated product page only", async () => {
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <link rel="canonical" href="https://www.zap.co.il/model.aspx?modelid=1253558">
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": "iPhone 17 Pro Max",
+              "offers": {
+                "@type": "AggregateOffer",
+                "priceCurrency": "ILS",
+                "offers": [
+                  {
+                    "@type": "Offer",
+                    "price": "4790",
+                    "seller": { "@type": "Organization", "name": "JSON Store" }
+                  }
+                ]
+              }
+            }
+          </script>
+        </head>
+        <body>
+          <article data-shop-name="Lowest Price" data-price="4590" data-rating="4.1" data-review-count="12"></article>
+          <article data-shop-name="Better Rated" data-price="4690" data-rating="4.9" data-review-count="220"></article>
+        </body>
+      </html>`;
+    const fetchMock = vi.fn(async () => new Response(html, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["product", "offers", "--model-id", "1253558", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://www.zap.co.il/model.aspx?modelid=1253558");
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(init.credentials).toBe("omit");
+    expect(init.redirect).toBe("error");
+    expect(JSON.stringify(init.headers).toLowerCase()).not.toContain("cookie");
+    expect(JSON.parse(result.stdout)).toEqual(
+      expect.objectContaining({
+        schemaVersion: "zap.product-offers.v1",
+        recordType: "product_offers",
+        modelId: "1253558",
+        title: "iPhone 17 Pro Max",
+        sourceUrl: "https://www.zap.co.il/model.aspx?modelid=1253558",
+        rankingPolicy: expect.objectContaining({
+          primary: "lowest_price",
+          secondary: "vendor_rating",
+          officialImportInferred: false
+        }),
+        rankedOffers: [
+          expect.objectContaining({
+            rank: 1,
+            vendorName: "Lowest Price",
+            priceIls: 4590,
+            source: "static_vendor_card",
+            importType: "unspecified"
+          }),
+          expect.objectContaining({
+            rank: 2,
+            vendorName: "Better Rated",
+            priceIls: 4690,
+            source: "static_vendor_card",
+            importType: "unspecified"
+          }),
+          expect.objectContaining({
+            rank: 3,
+            vendorName: "JSON Store",
+            priceIls: 4790,
+            source: "json_ld_offer",
+            importType: "unspecified"
+          })
+        ],
+        warnings: []
+      })
+    );
+  });
+
+  it("limits product offer rankings before emitting output", async () => {
+    const html = `<!doctype html>
+      <html>
+        <head><title>Limited Product</title></head>
+        <body>
+          <article data-shop-name="First" data-price="100"></article>
+          <article data-shop-name="Second" data-price="110"></article>
+        </body>
+      </html>`;
+    const fetchMock = vi.fn(async () => new Response(html, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["product", "offers", "--model-id", "1253558", "--limit", "1", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(
+      expect.objectContaining({
+        rankedOffers: [expect.objectContaining({ rank: 1, vendorName: "First" })]
+      })
+    );
+  });
+
+  it("ranks a single JSON-LD Offer product shape", async () => {
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": "Single Offer Product",
+              "offers": {
+                "@type": "Offer",
+                "price": "4790",
+                "priceCurrency": "ILS",
+                "seller": { "@type": "Organization", "name": "Single JSON Store" }
+              }
+            }
+          </script>
+        </head>
+      </html>`;
+    const fetchMock = vi.fn(async () => new Response(html, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["product", "offers", "--model-id", "1253558", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(
+      expect.objectContaining({
+        rankedOffers: [
+          expect.objectContaining({
+            rank: 1,
+            source: "json_ld_offer",
+            vendorName: "Single JSON Store",
+            priceIls: 4790,
+            priceCurrency: "ILS",
+            importType: "unspecified",
+            warranty: "unspecified"
+          })
+        ]
+      })
+    );
+  });
+
+  it("does not turn AggregateOffer summaries into vendor offers", async () => {
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": "Summary Only Product",
+              "offers": {
+                "@type": "AggregateOffer",
+                "lowPrice": "4590",
+                "highPrice": "4990",
+                "offerCount": "4",
+                "priceCurrency": "ILS"
+              }
+            }
+          </script>
+        </head>
+      </html>`;
+    const fetchMock = vi.fn(async () => new Response(html, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["product", "offers", "--model-id", "1253558", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(
+      expect.objectContaining({
+        rankedOffers: [],
+        warnings: [
+          "No reliable static vendor card metadata found.",
+          "No procurement offers found in vendor cards or JSON-LD AggregateOffer offers."
+        ]
+      })
+    );
+  });
+
   it("rejects invalid product inspect model ids without fetching", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -425,6 +607,39 @@ describe("runCli", () => {
         code: "INVALID_ARGUMENTS",
         message: "Invalid model id \"../checkout\".",
         hint: "Use a numeric ZAP model id such as 1253558."
+      }
+    });
+  });
+
+  it("rejects invalid product offers model ids without fetching", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["product", "offers", "--model-id", "../checkout", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(2);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: "Invalid model id \"../checkout\".",
+        hint: "Use a numeric ZAP model id such as 1253558."
+      }
+    });
+  });
+
+  it("rejects extra product offers arguments before fetching", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCli(["product", "offers", "stale", "--model-id", "1253558", "--output", "json"], { stdoutIsTTY: false });
+
+    expect(result.exitCode).toBe(2);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(JSON.parse(result.stderr)).toEqual({
+      error: {
+        code: "INVALID_ARGUMENTS",
+        message: 'Unexpected argument "stale" for product offers.'
       }
     });
   });

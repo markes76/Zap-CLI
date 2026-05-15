@@ -6,19 +6,20 @@ This document tracks recommended project phases after the private bootstrap PR. 
 
 ## Current Position
 
-- Branch: `codex/export-out-cache`.
+- Branch: `codex/product-offers`.
 - Base branch: `main`.
-- Main already includes the private bootstrap, offline search expansion, product URL/inspection, watchlist, and stdout export commands.
-- Current branch adds read-only `cache info`, exact-file `--out <path>` for export commands, and matching docs/tests.
+- Main already includes the private bootstrap, offline search expansion, product URL/inspection, watchlist, cache inspection, and export commands.
+- Current branch adds first-pass `product offers` ranking from one explicit product page's static offer metadata.
 
 ## Recommended Phases
 
-### Phase 0: Export and Cache PR Closure
+### Phase 0: Product Offers PR Closure
 
-Goal: land the current export/cache polish branch as a small reviewed increment.
+Goal: land first-pass offer ranking without expanding the consent boundary.
 
-- Keep the scope to `cache info`, export `--out`, schemas, tests, and docs.
-- Confirm bad `--out` paths fail before network fetches or cache writes.
+- Keep the scope to `product offers`, the local ranking helper, schemas, tests, and docs.
+- Confirm invalid model ids fail before fetching.
+- Confirm the command fetches only `model.aspx?modelid=<id>` with omitted credentials and redirect errors.
 - Merge only after the local gate and CI are green and the PR body reflects shipped behavior.
 
 ### Phase 1: Product Inspection Hardening
@@ -39,6 +40,15 @@ Goal: improve usability without changing the consent boundary.
 - Add explicit overwrite controls only if there is a clear user need; current `--out` never overwrites.
 - Update command schemas, tests, CLI smoke checks, and docs in the same PR as each behavior change.
 
+### Phase 2.5: Adaptive Agent Foundation
+
+Goal: let the CLI learn from use while keeping changes explicit and reviewable.
+
+- Add local preference/profile commands for category, budget, output format, language, and vendor preferences.
+- Add diagnostic summaries for command failures, warnings, and recurring next actions.
+- Add a skill-update proposal command that produces a diff or Markdown recommendation, not an automatic overwrite.
+- Keep all learning data local by default and exclude cookies, sessions, account data, checkout state, and personal identifiers.
+
 ### Phase 3: Local Search Expansion
 
 Goal: make local search useful from bounded, official inputs.
@@ -50,9 +60,10 @@ Goal: make local search useful from bounded, official inputs.
 
 ### Phase 4: Procurement Ranking and Vendor Summaries
 
-Goal: rank offers locally after inspection data exists.
+Goal: expand procurement workflows without leaving the explicit product-page boundary.
 
-- Add `product offers` or `procure rank` over previously inspected product data.
+- Harden `product offers` against more product-page shapes and add `--from-inspection` only after saved inspection schemas are stable.
+- Add `procure rank` over saved inspection/offer data when the ranking contract is ready.
 - Add `product specs` if specs can be fetched within the approved boundary.
 - Add `vendor inspect --summary-only` for bounded vendor profile summaries.
 - Keep ranking criteria visible in output so agents can explain why a result won.

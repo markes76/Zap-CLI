@@ -43,12 +43,13 @@ Current schema-backed commands:
 | `search suggest <query>` | Return local cache candidates plus a generated ZAP search handoff URL. |
 | `product url --model-id <id>` | Generate product/reviews/compare URLs only. Does not fetch them. |
 | `product inspect --model-id <id>` | Fetch one validated public product page and extract static JSON-LD/product metadata. |
+| `product offers --model-id <id> --limit <n>` | Fetch one validated public product page and rank observed static offer metadata. Does not infer official import/warranty. |
 | `search url <query>` | Generate official search handoff URL with `fetched: false`. Does not fetch blocked search pages. |
 | `watch add/list/remove` | Manage local SQLite watchlist items. |
 | `watch export --output json|csv [--include-notes]` | Export local watchlist data. Notes are excluded unless requested. |
 | `schema list/get` | Read offline command contracts. |
 
-Confirm details with `zap schema get product-inspect --output json` before relying on field-level behavior.
+Confirm details with `zap schema get product-inspect --output json` or `zap schema get product-offers --output json` before relying on field-level behavior.
 
 ## Consent Boundary
 
@@ -56,6 +57,7 @@ Allowed by the current CLI:
 
 - Fetch official RSS feeds under `https://www.zap.co.il/xmls/general/rss.aspx`.
 - Fetch one explicit public product page generated from a validated numeric model id: `https://www.zap.co.il/model.aspx?modelid=<id>`.
+- Rank observed product-page offer metadata with `product offers`; leave official import, warranty, checkout totals, and redirect targets unverified unless explicitly present in allowed output.
 - Search local SQLite/FTS cache created from those RSS feeds.
 - Generate ZAP product/search/review/compare handoff URLs.
 - Store and read local watchlists.
@@ -75,6 +77,16 @@ Do not use the CLI, browser automation, or improvised scripts to fetch or scrape
 - `--select id,title,modelId,productUrl` selects top-level fields. It is most useful for array results like `feed list`, not nested wrappers like `schema list`.
 - `--quiet` suppresses successful stdout. Errors still use JSON on stderr.
 - Errors always use a JSON envelope on stderr and exit with stable codes, for example `INVALID_ARGUMENTS` exits `2`, `NOT_FOUND` exits `5`, `NETWORK_ERROR` exits `7`, and `REMOTE_API_ERROR` exits `8`.
+
+## Adaptive Behavior
+
+The CLI should evolve through reviewable local feedback loops, not silent self-modification.
+
+- Learn user preferences only from local CLI use or explicit user input.
+- Prefer storing reusable preferences as local profile data before changing shared docs or skills.
+- Propose skill updates as diffs or Markdown recommendations; do not overwrite `skills/zap-cli/SKILL.md` without explicit approval.
+- Turn recurring errors into diagnostic notes and tests before changing command behavior.
+- Never learn from cookies, sessions, account pages, checkout state, payment data, HAR captures, or blocked ZAP surfaces.
 
 Error shape:
 
@@ -152,6 +164,7 @@ Inspect one explicit public product page when the user needs product-page eviden
 
 ```bash
 zap product inspect --model-id 1253558 --output json
+zap product offers --model-id 1253558 --limit 20 --output json
 ```
 
 Expected top-level fields:
@@ -174,7 +187,7 @@ Expected top-level fields:
 }
 ```
 
-Treat `vendorCards` as opportunistic static metadata. If it is empty or a warning is present, ask for browser/user confirmation before ranking offers.
+Treat `vendorCards` and `product offers` as opportunistic static metadata. If offers are missing, fields are incomplete, or warnings are present, ask for browser/user confirmation before making a purchase recommendation.
 
 ## Watchlists
 
@@ -222,7 +235,7 @@ Use this workflow:
 2. Use `categories list`, `feed list`, and optionally `feed sync`/`feed search` to find RSS-backed candidates.
 3. Use `search sync` and `search local` when the user needs multi-category offline discovery.
 4. Use `search suggest` or `search url` for broader discovery handoff when RSS/local cache is insufficient.
-5. Use `product inspect` once a model id is known to collect static product-page evidence. Use `product url` for handoff links.
+5. Use `product inspect` once a model id is known to collect static product-page evidence. Use `product offers` for a preliminary ranking from observed static offer metadata. Use `product url` for handoff links.
 6. Recommend only from labeled evidence. Do not infer current price, seller quality, stock, shipping, warranty, or import status from RSS titles or generated URLs alone.
 7. Use `watch add` to save shortlisted model ids and target prices locally.
 

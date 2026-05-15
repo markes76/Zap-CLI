@@ -66,11 +66,13 @@ Future output groups:
 - Import/warranty: official/parallel/unspecified import, warranty duration, warranty provider.
 - Links: product, specs, reviews, vendor profile; never follow `/fs*` redirects.
 
-Procurement ranking can then be local over one explicit model page:
+First-pass procurement ranking is now local over one explicit model page:
 
 ```bash
-zap procure rank --model-id 1253618 --prefer official-import --min-store-rating 4.5 --min-reviews-year 25
+zap product offers --model-id 1253618 --limit 20 --output json
 ```
+
+The current command ranks only observed static vendor cards and JSON-LD offers. It does not infer official import, warranty, final checkout totals, or redirect targets. A future `procure rank` command can add richer constraints after saved inspection and offer schemas stabilize.
 
 ## Skill Work
 
@@ -84,9 +86,9 @@ The new `skills/zap-cli/SKILL.md` documents:
 
 ## Immediate Implementation Sequence
 
-1. Add `search sync`, `search local`, and `search suggest`.
-2. Add `product inspect --model-id` for one explicit product page.
-3. Add `product offers`/`procure rank` using only the inspected page output.
+1. Harden `product offers` across more observed product-page shapes.
+2. Add saved inspection input support for `product offers --from-inspection`.
+3. Add `procure rank` using only saved inspection/offer data.
 4. Add `product specs`.
 5. Add `vendor inspect --summary-only`.
 

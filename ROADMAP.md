@@ -8,6 +8,8 @@
 - Ship `search sync`, `search local`, and `search suggest` for better offline discovery from official RSS/cache data.
 - Ship first export commands for RSS and local watchlist data.
 - Ship export file output and cache inspection.
+- Ship first product offer ranking from explicit product-page inspection data.
+- Define the self-evolving agent model as local memory, diagnostics, skill suggestions, and reviewable code proposals.
 - Keep docs and changelog updated with each feature branch.
 - Verify JSON-first behavior for agent usage.
 
@@ -16,12 +18,15 @@
 - Add richer text output for human terminals.
 - Add command examples to schema output.
 - Add cache maintenance commands such as prune/clear with explicit confirmation.
+- Add local preference/profile commands for safe personalization.
+- Add diagnostics commands that summarize errors and suggest next actions without changing code automatically.
 
 ## v0.3 Procurement Research
 
 - Improve `product inspect` extraction only from allowed public product-page data.
-- Add procurement reports from saved inspection JSON and local ranking rules.
+- Add procurement reports from saved inspection JSON and explicit local ranking rules.
 - Add Markdown/HTML renderers after JSON report schemas are stable.
+- Add a reviewable skill-update workflow that proposes diffs to user-local guidance based on successful CLI usage patterns.
 
 ## v1 Community Release
 

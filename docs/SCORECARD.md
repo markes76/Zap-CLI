@@ -11,7 +11,8 @@
 ## ZAP Consent Boundary
 
 - RSS fetches use official category feeds only.
-- `product inspect --model-id` fetches one validated public product page with no credentials or redirects.
+- `product inspect --model-id` and `product offers --model-id` fetch one validated public product page with no credentials or redirects.
+- `product offers` ranks only observed JSON-LD offers and reliable static vendor-card metadata; it does not infer official import, warranty, or checkout totals.
 - `search sync` fetches only official RSS feeds and supports `all` or comma-separated supported categories.
 - `search local` and `search suggest` read the local cache only and never fetch search result pages.
 - `feed export` fetches only one bounded official RSS feed.
