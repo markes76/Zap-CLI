@@ -19,6 +19,7 @@
 - Updated package metadata for a public source repository while keeping npm publication as a later release decision.
 - Added the ZAP logo as a brand-identification asset with an explicit notice that the project is unofficial and the logo is not MIT-licensed.
 - Documented plain-language agent usage so users know they can ask an AI agent to install, search, inspect, and export without memorizing every command.
+- Added a README-specific ZAP logo image with a dark background baked in so the white logo is visible on GitHub.
 
 ## 0.1.0 - Private Bootstrap
 

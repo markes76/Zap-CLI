@@ -1,12 +1,8 @@
 # ZAP CLI
 
-<table>
-  <tr>
-    <td align="center" bgcolor="#111111">
-      <img src="assets/brand/zap-logo.png" alt="ZAP logo" width="193">
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="assets/brand/zap-logo-readme.png" alt="ZAP logo" width="450">
+</p>
 
 Consent-safe consumer CLI for [zap.co.il](https://www.zap.co.il/), built for shoppers, researchers, and AI agents that need deterministic shopping research commands.
 
