@@ -45,8 +45,8 @@ Machine output is JSON by default when stdout is not a TTY. NDJSON is supported 
 Future self-evolution should use four consent-safe layers:
 
 - Local preference memory: user-owned settings for categories, budget ranges, preferred output formats, trusted vendors, language, and recurring procurement constraints.
-- Run history and diagnostics: local summaries of commands, errors, warnings, result counts, and which next actions helped, without cookies, sessions, checkout data, or account identifiers.
-- Skill updates: generated suggestions for `skills/zap-cli/SKILL.md` or user-local companion skill notes, presented as diffs rather than applied silently.
+- Explicit feedback and diagnostics: local summaries of commands, ratings, warnings, result counts, and which next actions helped, without cookies, sessions, checkout data, or account identifiers.
+- Skill updates: `agent skill draft` generates suggested notes for `skills/zap-cli/SKILL.md` or user-local companion skill notes, presented as reviewable text rather than applied silently.
 - Code improvement proposals: reproducible bug reports and patch suggestions that go through tests, PRs, CI, and user review before reaching `main`.
 
 ## Consent-Safe Boundary

@@ -33,6 +33,62 @@ export const commandSchemas: CommandSchema[] = [
     safety: "Offline local read only; does not create a missing cache."
   },
   {
+    key: "agent-profile-get",
+    name: "agent profile get",
+    description: "Show local adaptive-agent preferences.",
+    usage: "zap agent profile get",
+    output: "Cache path and local preference records.",
+    safety: "Offline local read only; does not create a missing cache."
+  },
+  {
+    key: "agent-profile-set",
+    name: "agent profile set",
+    description: "Store one explicit local adaptive-agent preference.",
+    usage: "zap agent profile set --key preferred.output --value json",
+    output: "Saved preference key, value, and update timestamp.",
+    safety: "Local SQLite write only; does not fetch ZAP and does not update code or skill files."
+  },
+  {
+    key: "agent-profile-unset",
+    name: "agent profile unset",
+    description: "Remove one explicit local adaptive-agent preference.",
+    usage: "zap agent profile unset --key preferred.output",
+    output: "Preference key and removal status.",
+    safety: "Local SQLite write only; does not fetch ZAP and does not update code or skill files."
+  },
+  {
+    key: "agent-feedback-add",
+    name: "agent feedback add",
+    description: "Record explicit local feedback about a command result.",
+    usage: "zap agent feedback add --command \"search local iphone\" --rating 5 --output-format json",
+    output: "Saved feedback id, command, rating, output format, optional notes, and timestamp.",
+    safety: "Local SQLite write only; feedback is user-provided and never sent to ZAP."
+  },
+  {
+    key: "agent-feedback-list",
+    name: "agent feedback list",
+    description: "List explicit local adaptive-agent feedback records.",
+    usage: "zap agent feedback list --limit 20",
+    output: "Cache path and recent feedback records.",
+    safety: "Offline local read only; does not create a missing cache."
+  },
+  {
+    key: "agent-suggest",
+    name: "agent suggest",
+    description: "Suggest adaptive behavior from local preferences and feedback.",
+    usage: "zap agent suggest",
+    output: "Cache path, preferences, feedback summary, recommendations, and a reviewable skill draft.",
+    safety: "Offline local read only; suggestions are not applied automatically."
+  },
+  {
+    key: "agent-skill-draft",
+    name: "agent skill draft",
+    description: "Draft reviewable skill notes from local adaptive-agent state.",
+    usage: "zap agent skill draft",
+    output: "Cache path, format=markdown, and draft lines. The CLI does not write skill files.",
+    safety: "Offline local read only; produces a reviewable draft instead of modifying shared skills."
+  },
+  {
     key: "feed-list",
     name: "feed list",
     description: "Fetch a bounded official ZAP RSS feed.",

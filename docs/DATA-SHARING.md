@@ -31,6 +31,7 @@ This document defines how `zap` should share data with humans, scripts, and agen
 - CSV is a flat table format. Nested entities are exported as separate files or selected field sets, not as lossy JSON strings unless the user explicitly selects a nested field.
 - HTML reports are self-contained static files generated from the same report JSON. They must not include remote JavaScript or tracking.
 - Exported records include provenance fields where they can be shared safely. Local cache paths, local file paths, and freeform watch notes are excluded unless explicitly requested.
+- Adaptive-agent preferences and feedback are local user data. `agent suggest` and `agent skill draft` may summarize them, but the CLI must not upload them or apply skill/code changes automatically.
 
 ## Output Formats
 
