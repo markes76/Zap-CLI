@@ -73,6 +73,30 @@ export const commandSchemas: CommandSchema[] = [
     safety: "Does not fetch search pages, which are blocked by robots."
   },
   {
+    key: "search-sync",
+    name: "search sync",
+    description: "Fetch bounded official RSS feeds and cache them locally for offline search.",
+    usage: "zap search sync --category electric,comp --limit 20",
+    output: "Synced categories, per-category counts, total synced count, and SQLite cache path.",
+    safety: "Fetches only official /xmls/general/rss.aspx category feeds and writes local cache data."
+  },
+  {
+    key: "search-local",
+    name: "search local",
+    description: "Search locally cached RSS items using SQLite FTS.",
+    usage: "zap search local Wiim --category electric --limit 10 --sort relevance",
+    output: "Cached RSS items matching the query.",
+    safety: "Offline local search; no ZAP network request."
+  },
+  {
+    key: "search-suggest",
+    name: "search suggest",
+    description: "Return offline cached candidates plus an official ZAP search handoff URL.",
+    usage: "zap search suggest \"iphone 17\" --category electric --limit 5",
+    output: "Query, searchUrl, fetched=false, cache status, optional cache warnings, cacheResults, and structured suggested next command argv arrays.",
+    safety: "Offline local cache access only; never fetches ZAP search pages."
+  },
+  {
     key: "watch-add",
     name: "watch add",
     description: "Add a local watchlist item.",

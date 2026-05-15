@@ -35,6 +35,8 @@ export async function fetchRssFeed(categoryId: string, options: FetchRssOptions 
   try {
     const response = await fetch(category.rssUrl, {
       signal: controller.signal,
+      credentials: "omit",
+      redirect: "error",
       headers: {
         "user-agent": "zap-cli/0.1 consent-safe RSS reader"
       }

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { aboutZapCli } from "./about.js";
@@ -7,7 +8,17 @@ import { formatOutput, resolveOutputFormat, selectFields } from "./output.js";
 import { inspectProduct } from "./product.js";
 import { fetchRssFeed } from "./rss.js";
 import { getSchema, listSchemas } from "./schema.js";
-import type { CliResult, GlobalOptions, OutputFormat, RunContext, WatchItemInput } from "./types.js";
+import { buildSearchNextCommands, parseOptionalCategoryFilter, parseSearchSort, parseSyncCategories } from "./search.js";
+import type {
+  CliResult,
+  GlobalOptions,
+  OutputFormat,
+  RssSearchOptions,
+  RunContext,
+  SearchSuggestResult,
+  SearchSyncResult,
+  WatchItemInput
+} from "./types.js";
 import { getProductUrls, getSearchUrl } from "./urls.js";
 
 interface ParsedArgs {
@@ -80,7 +91,7 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
     const limit = optionalPositiveInt(parsed, "limit", 20);
     const store = await openStore(parsed.global, env);
     try {
-      return store.searchRssItems(query, limit);
+      return store.searchRssItems(query, { limit, sort: "newest" });
     } finally {
       store.close();
     }
@@ -103,6 +114,93 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
       searchUrl: getSearchUrl(query),
       fetched: false
     };
+  }
+
+  if (noun === "search" && verb === "sync") {
+    const categoryInput = requireFlag(parsed, "category", "Run zap schema get search-sync for command details.");
+    const categoryIds = parseSyncCategories(categoryInput);
+    const limit = optionalPositiveInt(parsed, "limit", 20);
+    const store = await openStore(parsed.global, env);
+    const perCategory: SearchSyncResult["perCategory"] = [];
+    try {
+      for (const category of categoryIds) {
+        const items = await fetchRssFeed(category, { limit, timeoutMs: parsed.global.timeoutMs });
+        const synced = store.upsertRssItems(items);
+        perCategory.push({ category, synced });
+      }
+      return {
+        categories: categoryIds,
+        synced: perCategory.reduce((total, item) => total + item.synced, 0),
+        perCategory,
+        cachePath: cachePath(parsed.global, env)
+      } satisfies SearchSyncResult;
+    } finally {
+      store.close();
+    }
+  }
+
+  if (noun === "search" && verb === "local") {
+    const query = rest.join(" ").trim();
+    if (!query) {
+      throw new CliError("INVALID_ARGUMENTS", "Missing local search query.", "Usage: zap search local Wiim --limit 10.");
+    }
+    const categories = parseOptionalCategoryFilter(optionalFlag(parsed, "category"));
+    const limit = optionalPositiveInt(parsed, "limit", 20);
+    const sort = parseSearchSort(optionalFlag(parsed, "sort"));
+    const searchOptions: RssSearchOptions = { limit, sort, ...(categories ? { categories } : {}) };
+    const store = await openStore(parsed.global, env);
+    try {
+      return store.searchRssItems(query, searchOptions);
+    } finally {
+      store.close();
+    }
+  }
+
+  if (noun === "search" && verb === "suggest") {
+    const query = rest.join(" ").trim();
+    if (!query) {
+      throw new CliError("INVALID_ARGUMENTS", "Missing search suggest query.", "Usage: zap search suggest Wiim --limit 10.");
+    }
+    const categories = parseOptionalCategoryFilter(optionalFlag(parsed, "category"));
+    const limit = optionalPositiveInt(parsed, "limit", 5);
+    const searchOptions: RssSearchOptions = { limit, sort: "relevance", ...(categories ? { categories } : {}) };
+    const nextCommands = buildSearchNextCommands(query, categories, limit);
+    const databasePath = cachePath(parsed.global, env);
+    if (!existsSync(databasePath)) {
+      return {
+        query,
+        searchUrl: getSearchUrl(query),
+        fetched: false,
+        cacheStatus: "empty",
+        cacheResults: [],
+        nextCommands
+      } satisfies SearchSuggestResult;
+    }
+
+    let store: Awaited<ReturnType<typeof openStore>> | undefined;
+    try {
+      store = await openStore(parsed.global, env, { readOnly: true });
+      return {
+        query,
+        searchUrl: getSearchUrl(query),
+        fetched: false,
+        cacheStatus: "searched",
+        cacheResults: store.searchRssItems(query, searchOptions),
+        nextCommands
+      } satisfies SearchSuggestResult;
+    } catch {
+      return {
+        query,
+        searchUrl: getSearchUrl(query),
+        fetched: false,
+        cacheStatus: "unavailable",
+        cacheResults: [],
+        cacheWarnings: ["Local cache could not be read; returned handoff URL only."],
+        nextCommands
+      } satisfies SearchSuggestResult;
+    } finally {
+      store?.close();
+    }
   }
 
   if (noun === "watch" && verb === "add") {
@@ -189,12 +287,11 @@ function parseArgs(argv: string[], stdoutIsTTY: boolean, env: NodeJS.ProcessEnv)
         flags[key] = true;
       } else {
         const next = argv[index + 1];
-        if (next === undefined || next.startsWith("-")) {
-          flags[key] = true;
-        } else {
-          flags[key] = next;
-          index += 1;
+        if (next === undefined || isOptionToken(next)) {
+          throw new CliError("INVALID_ARGUMENTS", `Missing value for --${key}.`, `Pass a value after --${key} or use --${key}=<value>.`);
         }
+        flags[key] = next;
+        index += 1;
       }
       continue;
     }
@@ -304,12 +401,16 @@ function parseOutputFormat(value: string | undefined): OutputFormat | undefined 
 }
 
 function isBooleanFlag(key: string): boolean {
-  return key === "quiet" || key === "no-color" || key === "yes" || key === "dry-run" || key === "verbose";
+  return key === "quiet" || key === "no-color" || key === "yes" || key === "dry-run" || key === "verbose" || key === "help";
 }
 
-async function openStore(options: GlobalOptions, env: NodeJS.ProcessEnv) {
+function isOptionToken(value: string): boolean {
+  return value.startsWith("--") || value === "-o" || value === "-q" || value === "-h";
+}
+
+async function openStore(options: GlobalOptions, env: NodeJS.ProcessEnv, storeOptions: { readOnly?: boolean } = {}) {
   const { ZapStore } = await import("./store.js");
-  return new ZapStore(cachePath(options, env));
+  return new ZapStore(cachePath(options, env), storeOptions);
 }
 
 function cachePath(options: GlobalOptions, env: NodeJS.ProcessEnv): string {

@@ -11,6 +11,41 @@ export interface RssItem {
   imageUrl: string | null;
 }
 
+export type SearchSort = "relevance" | "newest";
+
+export interface RssSearchOptions {
+  limit?: number;
+  categories?: string[];
+  sort?: SearchSort;
+}
+
+export interface SearchSyncCategoryResult {
+  category: string;
+  synced: number;
+}
+
+export interface SearchSyncResult {
+  categories: string[];
+  synced: number;
+  perCategory: SearchSyncCategoryResult[];
+  cachePath: string;
+}
+
+export interface SearchNextCommand {
+  command: string;
+  argv: string[];
+}
+
+export interface SearchSuggestResult {
+  query: string;
+  searchUrl: string;
+  fetched: false;
+  cacheStatus: "empty" | "searched" | "unavailable";
+  cacheResults: RssItem[];
+  cacheWarnings?: string[];
+  nextCommands: SearchNextCommand[];
+}
+
 export interface ProductUrls {
   modelId: string;
   productUrl: string;

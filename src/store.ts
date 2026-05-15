@@ -2,16 +2,20 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import type { RssItem, WatchItem, WatchItemInput } from "./types.js";
+import type { RssItem, RssSearchOptions, WatchItem, WatchItemInput } from "./types.js";
 import { getProductUrls, validateModelId } from "./urls.js";
 
 export class ZapStore {
   private readonly db: DatabaseSync;
 
-  constructor(databasePath: string) {
-    mkdirSync(dirname(databasePath), { recursive: true });
-    this.db = new DatabaseSync(databasePath);
-    this.migrate();
+  constructor(databasePath: string, options: { readOnly?: boolean } = {}) {
+    if (!options.readOnly) {
+      mkdirSync(dirname(databasePath), { recursive: true });
+    }
+    this.db = new DatabaseSync(databasePath, options.readOnly ? { readOnly: true } : {});
+    if (!options.readOnly) {
+      this.migrate();
+    }
   }
 
   close(): void {
@@ -50,29 +54,40 @@ export class ZapStore {
     return items.length;
   }
 
-  searchRssItems(query: string, limit: number): RssItem[] {
+  searchRssItems(query: string, limit: number): RssItem[];
+  searchRssItems(query: string, options: RssSearchOptions): RssItem[];
+  searchRssItems(query: string, limitOrOptions: number | RssSearchOptions): RssItem[] {
     const trimmed = query.trim();
     if (!trimmed) {
       return [];
     }
+    const options = typeof limitOrOptions === "number" ? { limit: limitOrOptions } : limitOrOptions;
+    const limit = options.limit ?? 20;
+    const categories = options.categories ?? [];
+    const sort = options.sort ?? "newest";
 
     const matchQuery = trimmed
       .split(/\s+/)
       .map((token) => `"${token.replace(/"/g, "\"\"")}"`)
       .join(" ");
+    const categoryFilter = categories.length > 0 ? `AND r.category IN (${categories.map(() => "?").join(", ")})` : "";
+    const orderBy =
+      sort === "relevance" ? "bm25(rss_items_fts, 0.0, 6.0, 1.0), r.published_at DESC, r.id ASC" : "r.published_at DESC, r.id ASC";
+    const params: Array<string | number> = [matchQuery, ...categories, limit];
 
     const rows = this.db
       .prepare(
         `
         SELECT r.*
-        FROM rss_items_fts f
-        JOIN rss_items r ON r.id = f.id
+        FROM rss_items_fts
+        JOIN rss_items r ON r.id = rss_items_fts.id
         WHERE rss_items_fts MATCH ?
-        ORDER BY r.published_at DESC
+        ${categoryFilter}
+        ORDER BY ${orderBy}
         LIMIT ?
       `
       )
-      .all(matchQuery, limit) as unknown as RssRow[];
+      .all(...params) as unknown as RssRow[];
 
     return rows.map(rssRowToItem);
   }
