@@ -11,6 +11,7 @@
 - Added `cache info` for read-only local cache inspection.
 - Added `product offers` for consent-safe ranking from one explicit product page's static offer metadata.
 - Documented the future self-evolving agent model as local preference memory, diagnostics, reviewable skill updates, and PR-based code improvements.
+- Added local adaptive-agent commands for explicit preferences, feedback, suggestions, and skill drafts.
 
 ## 0.1.0 - Private Bootstrap
 

@@ -34,6 +34,10 @@ Current schema-backed commands:
 | `about` | Show purpose, sources, and safety policy. No ZAP page fetch. |
 | `categories list` | List static RSS category metadata. |
 | `cache info` | Inspect local cache path/counts read-only. Does not create missing caches. |
+| `agent profile get/set/unset` | Manage explicit local preferences. Does not fetch ZAP or update skill files. |
+| `agent feedback add/list` | Record or list explicit local feedback about command usefulness. |
+| `agent suggest` | Summarize local preferences and feedback into recommended behavior. |
+| `agent skill draft` | Draft reviewable skill notes; does not write skill files. |
 | `feed list --category <id> --limit <n>` | Fetch one bounded official RSS category feed. |
 | `feed sync --category <id> --limit <n>` | Fetch one bounded official RSS category feed and cache normalized items locally. |
 | `feed search <query> --limit <n>` | Search local SQLite FTS cache only. No ZAP network request. |
@@ -87,6 +91,16 @@ The CLI should evolve through reviewable local feedback loops, not silent self-m
 - Propose skill updates as diffs or Markdown recommendations; do not overwrite `skills/zap-cli/SKILL.md` without explicit approval.
 - Turn recurring errors into diagnostic notes and tests before changing command behavior.
 - Never learn from cookies, sessions, account pages, checkout state, payment data, HAR captures, or blocked ZAP surfaces.
+
+Useful commands:
+
+```bash
+zap agent profile set --key preferred.output --value json --output json
+zap agent profile set --key budget.maxIls --value 4500 --output json
+zap agent feedback add --command "product offers" --rating 5 --output-format json --notes "ranked output was useful" --output json
+zap agent suggest --output json
+zap agent skill draft --output json
+```
 
 Error shape:
 

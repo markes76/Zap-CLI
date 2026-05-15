@@ -2,7 +2,18 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import type { CacheCategoryInfo, RssItem, RssSearchOptions, WatchItem, WatchItemInput } from "./types.js";
+import type {
+  AgentFeedback,
+  AgentFeedbackInput,
+  AgentFeedbackSummary,
+  AgentPreference,
+  CacheCategoryInfo,
+  OutputFormat,
+  RssItem,
+  RssSearchOptions,
+  WatchItem,
+  WatchItemInput
+} from "./types.js";
 import { getProductUrls, validateModelId } from "./urls.js";
 
 export class ZapStore {
@@ -153,6 +164,109 @@ export class ZapStore {
     }));
   }
 
+  listAgentPreferences(): AgentPreference[] {
+    if (!this.tableExists("agent_preferences")) {
+      return [];
+    }
+    const rows = this.db.prepare("SELECT * FROM agent_preferences ORDER BY key ASC").all() as unknown as AgentPreferenceRow[];
+    return rows.map(agentPreferenceRowToItem);
+  }
+
+  setAgentPreference(key: string, value: string): AgentPreference {
+    const item: AgentPreference = {
+      key,
+      value,
+      updatedAt: new Date().toISOString()
+    };
+    this.db
+      .prepare(
+        `
+        INSERT INTO agent_preferences (key, value, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET
+          value = excluded.value,
+          updated_at = excluded.updated_at
+      `
+      )
+      .run(item.key, item.value, item.updatedAt);
+    return item;
+  }
+
+  removeAgentPreference(key: string): boolean {
+    if (!this.tableExists("agent_preferences")) {
+      return false;
+    }
+    const result = this.db.prepare("DELETE FROM agent_preferences WHERE key = ?").run(key);
+    return result.changes > 0;
+  }
+
+  addAgentFeedback(input: AgentFeedbackInput): AgentFeedback {
+    const item: AgentFeedback = {
+      id: randomUUID(),
+      command: input.command,
+      rating: input.rating ?? null,
+      outputFormat: input.outputFormat ?? null,
+      notes: input.notes ?? null,
+      createdAt: new Date().toISOString()
+    };
+    this.db
+      .prepare(
+        `
+        INSERT INTO agent_feedback (id, command, rating, output_format, notes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+      )
+      .run(item.id, item.command, item.rating, item.outputFormat, item.notes, item.createdAt);
+    return item;
+  }
+
+  listAgentFeedback(limit: number): AgentFeedback[] {
+    if (!this.tableExists("agent_feedback")) {
+      return [];
+    }
+    const rows = this.db
+      .prepare("SELECT * FROM agent_feedback ORDER BY created_at DESC, id ASC LIMIT ?")
+      .all(limit) as unknown as AgentFeedbackRow[];
+    return rows.map(agentFeedbackRowToItem);
+  }
+
+  agentFeedbackSummary(): AgentFeedbackSummary {
+    if (!this.tableExists("agent_feedback")) {
+      return emptyFeedbackSummary();
+    }
+    const countRow = this.db.prepare("SELECT COUNT(*) AS count, AVG(rating) AS average_rating FROM agent_feedback").get() as unknown as FeedbackCountRow;
+    const formatRows = this.db
+      .prepare(
+        `
+        SELECT output_format, COUNT(*) AS count
+        FROM agent_feedback
+        WHERE output_format IS NOT NULL
+        GROUP BY output_format
+        ORDER BY count DESC, output_format ASC
+        LIMIT 1
+      `
+      )
+      .all() as unknown as FeedbackFormatRow[];
+    const commandRows = this.db
+      .prepare(
+        `
+        SELECT command, COUNT(*) AS count
+        FROM agent_feedback
+        GROUP BY command
+        ORDER BY count DESC, command ASC
+        LIMIT 5
+      `
+      )
+      .all() as unknown as FeedbackCommandRow[];
+
+    return {
+      count: countRow.count,
+      averageRating: countRow.average_rating,
+      preferredOutputFormat: formatRows[0]?.output_format ?? null,
+      topCommands: commandRows.map((row) => ({ command: row.command, count: row.count }))
+    };
+  }
+
   removeWatchItem(id: string): boolean {
     const result = this.db.prepare("DELETE FROM watch_items WHERE id = ?").run(id);
     return result.changes > 0;
@@ -184,7 +298,27 @@ export class ZapStore {
         notes TEXT,
         created_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS agent_preferences (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS agent_feedback (
+        id TEXT PRIMARY KEY,
+        command TEXT NOT NULL,
+        rating INTEGER,
+        output_format TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      );
     `);
+  }
+
+  private tableExists(name: string): boolean {
+    const row = this.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(name) as unknown as { name: string } | undefined;
+    return Boolean(row);
   }
 }
 
@@ -220,6 +354,36 @@ interface CategoryInfoRow {
   newest_published_at: string | null;
 }
 
+interface AgentPreferenceRow {
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
+interface AgentFeedbackRow {
+  id: string;
+  command: string;
+  rating: number | null;
+  output_format: OutputFormat | null;
+  notes: string | null;
+  created_at: string;
+}
+
+interface FeedbackCountRow {
+  count: number;
+  average_rating: number | null;
+}
+
+interface FeedbackFormatRow {
+  output_format: OutputFormat;
+  count: number;
+}
+
+interface FeedbackCommandRow {
+  command: string;
+  count: number;
+}
+
 function rssRowToItem(row: RssRow): RssItem {
   return {
     id: row.id,
@@ -243,5 +407,33 @@ function watchRowToItem(row: WatchRow): WatchItem {
     specUrl: row.spec_url,
     notes: row.notes,
     createdAt: row.created_at
+  };
+}
+
+function agentPreferenceRowToItem(row: AgentPreferenceRow): AgentPreference {
+  return {
+    key: row.key,
+    value: row.value,
+    updatedAt: row.updated_at
+  };
+}
+
+function agentFeedbackRowToItem(row: AgentFeedbackRow): AgentFeedback {
+  return {
+    id: row.id,
+    command: row.command,
+    rating: row.rating,
+    outputFormat: row.output_format,
+    notes: row.notes,
+    createdAt: row.created_at
+  };
+}
+
+function emptyFeedbackSummary(): AgentFeedbackSummary {
+  return {
+    count: 0,
+    averageRating: null,
+    preferredOutputFormat: null,
+    topCommands: []
   };
 }

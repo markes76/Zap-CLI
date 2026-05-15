@@ -48,6 +48,11 @@ node dist/cli.js about --output json
 zap about
 zap categories list
 zap cache info
+zap agent profile get
+zap agent profile set --key preferred.output --value json
+zap agent feedback add --command "product offers" --rating 5 --output-format json
+zap agent suggest
+zap agent skill draft
 zap feed list --category electric --limit 20
 zap feed sync --category electric --limit 20
 zap feed search Wiim --limit 10

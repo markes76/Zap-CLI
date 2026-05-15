@@ -2,6 +2,18 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { aboutZapCli } from "./about.js";
+import {
+  buildAgentSuggestionResult,
+  buildSkillDraft,
+  emptyAgentFeedbackSummary,
+  validateAgentPreferenceKey,
+  validateAgentPreferenceValue,
+  validateAgentPreferenceForKey,
+  validateFeedbackCommand,
+  validateFeedbackNotes,
+  validateFeedbackOutputFormat,
+  validateFeedbackRating
+} from "./agent.js";
 import { categories } from "./categories.js";
 import { CliError, exitCodeFor, toErrorEnvelope } from "./errors.js";
 import { createFeedExport, createWatchExport, formatExportOutput, isExportEnvelope } from "./export.js";
@@ -109,6 +121,84 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
   if (noun === "cache" && verb === "info") {
     ensureNoExtraArgs(rest, "cache info");
     return readCacheInfo(parsed.global, env);
+  }
+
+  if (noun === "agent" && verb === "profile") {
+    const action = rest[0];
+    const extra = rest.slice(1);
+    if (action === "get") {
+      ensureNoExtraArgs(extra, "agent profile get");
+      return readAgentProfile(parsed.global, env);
+    }
+    if (action === "set") {
+      ensureNoExtraArgs(extra, "agent profile set");
+      const key = validateAgentPreferenceKey(requireFlag(parsed, "key", "Usage: zap agent profile set --key preferred.output --value json."));
+      const value = validateAgentPreferenceForKey(
+        key,
+        validateAgentPreferenceValue(requireFlag(parsed, "value", "Usage: zap agent profile set --key preferred.output --value json."))
+      );
+      const store = await openStore(parsed.global, env);
+      try {
+        return store.setAgentPreference(key, value);
+      } finally {
+        store.close();
+      }
+    }
+    if (action === "unset") {
+      ensureNoExtraArgs(extra, "agent profile unset");
+      const key = validateAgentPreferenceKey(requireFlag(parsed, "key", "Usage: zap agent profile unset --key preferred.output."));
+      const databasePath = cachePath(parsed.global, env);
+      if (!existsSync(databasePath)) {
+        return { key, removed: false };
+      }
+      const store = await openStore(parsed.global, env);
+      try {
+        return { key, removed: store.removeAgentPreference(key) };
+      } finally {
+        store.close();
+      }
+    }
+  }
+
+  if (noun === "agent" && verb === "feedback") {
+    const action = rest[0];
+    const extra = rest.slice(1);
+    if (action === "add") {
+      ensureNoExtraArgs(extra, "agent feedback add");
+      const command = validateFeedbackCommand(requireFlag(parsed, "command", "Usage: zap agent feedback add --command \"search local iphone\" --rating 5."));
+      const rating = validateFeedbackRating(optionalNumber(parsed, "rating"));
+      const outputFormat = validateFeedbackOutputFormat(optionalFlag(parsed, "output-format"));
+      const notes = validateFeedbackNotes(optionalFlag(parsed, "notes"));
+      const store = await openStore(parsed.global, env);
+      try {
+        return store.addAgentFeedback({ command, rating, outputFormat, notes });
+      } finally {
+        store.close();
+      }
+    }
+    if (action === "list") {
+      ensureNoExtraArgs(extra, "agent feedback list");
+      const limit = optionalPositiveInt(parsed, "limit", 20);
+      return readAgentFeedback(parsed.global, env, limit);
+    }
+  }
+
+  if (noun === "agent" && verb === "suggest") {
+    ensureNoExtraArgs(rest, "agent suggest");
+    const state = await readAgentState(parsed.global, env);
+    const result = buildAgentSuggestionResult(state.cachePath, state.preferences, state.feedbackSummary);
+    return state.warnings ? { ...result, warnings: state.warnings } : result;
+  }
+
+  if (noun === "agent" && verb === "skill" && rest[0] === "draft") {
+    ensureNoExtraArgs(rest.slice(1), "agent skill draft");
+    const state = await readAgentState(parsed.global, env);
+    return {
+      cachePath: state.cachePath,
+      format: "markdown",
+      lines: buildSkillDraft(state.preferences, state.feedbackSummary),
+      ...(state.warnings ? { warnings: state.warnings } : {})
+    };
   }
 
   if (noun === "feed" && verb === "list") {
@@ -514,6 +604,72 @@ async function readCacheInfo(options: GlobalOptions, env: NodeJS.ProcessEnv) {
       rssItemCount: 0,
       watchItemCount: 0,
       categories: []
+    };
+  } finally {
+    store?.close();
+  }
+}
+
+async function readAgentProfile(options: GlobalOptions, env: NodeJS.ProcessEnv) {
+  const state = await readAgentState(options, env);
+  return {
+    cachePath: state.cachePath,
+    preferences: state.preferences,
+    ...(state.warnings ? { warnings: state.warnings } : {})
+  };
+}
+
+async function readAgentFeedback(options: GlobalOptions, env: NodeJS.ProcessEnv, limit: number) {
+  const path = cachePath(options, env);
+  if (!existsSync(path)) {
+    return {
+      cachePath: path,
+      feedback: []
+    };
+  }
+
+  let store: Awaited<ReturnType<typeof openStore>> | undefined;
+  try {
+    store = await openStore(options, env, { readOnly: true });
+    return {
+      cachePath: path,
+      feedback: store.listAgentFeedback(limit)
+    };
+  } catch {
+    return {
+      cachePath: path,
+      feedback: [],
+      warnings: ["Local adaptive-agent feedback could not be read."]
+    };
+  } finally {
+    store?.close();
+  }
+}
+
+async function readAgentState(options: GlobalOptions, env: NodeJS.ProcessEnv) {
+  const path = cachePath(options, env);
+  if (!existsSync(path)) {
+    return {
+      cachePath: path,
+      preferences: [],
+      feedbackSummary: emptyAgentFeedbackSummary()
+    };
+  }
+
+  let store: Awaited<ReturnType<typeof openStore>> | undefined;
+  try {
+    store = await openStore(options, env, { readOnly: true });
+    return {
+      cachePath: path,
+      preferences: store.listAgentPreferences(),
+      feedbackSummary: store.agentFeedbackSummary()
+    };
+  } catch {
+    return {
+      cachePath: path,
+      preferences: [],
+      feedbackSummary: emptyAgentFeedbackSummary(),
+      warnings: ["Local adaptive-agent state could not be read."]
     };
   } finally {
     store?.close();

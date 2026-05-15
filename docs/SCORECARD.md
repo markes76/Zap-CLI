@@ -19,6 +19,7 @@
 - `watch export` reads local watchlist data only and excludes freeform notes unless explicitly requested.
 - Export `--out` writes only explicit local file paths and does not overwrite existing files or the active cache database.
 - `cache info` opens the local cache read-only and does not create missing cache files.
+- `agent profile`, `agent feedback`, `agent suggest`, and `agent skill draft` use local SQLite only and do not update code or skill files automatically.
 - Search URL commands and product URL commands generate handoff URLs.
 - Blocked search/filter/order/account/checkout/redirect endpoints are not fetched.
 - Local watchlist and cache data stay on the user's machine.

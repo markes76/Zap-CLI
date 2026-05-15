@@ -178,6 +178,43 @@ export interface CacheInfo {
   categories: CacheCategoryInfo[];
 }
 
+export interface AgentPreference {
+  key: string;
+  value: string;
+  updatedAt: string;
+}
+
+export interface AgentFeedback {
+  id: string;
+  command: string;
+  rating: number | null;
+  outputFormat: OutputFormat | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface AgentFeedbackInput {
+  command: string;
+  rating?: number | null;
+  outputFormat?: OutputFormat | null;
+  notes?: string | null;
+}
+
+export interface AgentFeedbackSummary {
+  count: number;
+  averageRating: number | null;
+  preferredOutputFormat: OutputFormat | null;
+  topCommands: Array<{ command: string; count: number }>;
+}
+
+export interface AgentSuggestionResult {
+  cachePath: string;
+  preferences: AgentPreference[];
+  feedbackSummary: AgentFeedbackSummary;
+  recommendations: string[];
+  skillDraft: string[];
+}
+
 export interface GlobalOptions {
   format: OutputFormat;
   quiet: boolean;
