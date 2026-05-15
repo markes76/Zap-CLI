@@ -75,6 +75,8 @@ zap schema list
 zap schema get product-inspect
 ```
 
+Every command is explained in detail in [docs/COMMANDS.md](docs/COMMANDS.md), including when to use it, examples, output shape, and consent-safety notes.
+
 Global flags:
 
 ```bash
@@ -113,7 +115,7 @@ pnpm build
 
 The integration test calls one official RSS feed with a small limit and timeout.
 
-Additional project notes live in `docs/`, including the current scorecard, agent reconnaissance, next steps, PR status, and data-sharing/export design.
+Additional project notes live in `docs/`, including the full command reference, current scorecard, agent reconnaissance, next steps, PR status, and data-sharing/export design.
 
 ## Release Status
 

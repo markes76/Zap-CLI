@@ -1,25 +1,25 @@
 # Next Steps
 
-Last inspected: 2026-05-15.
+Last inspected: 2026-05-16.
 
 This document tracks recommended project phases after the private bootstrap PR. It is intentionally focused on release hygiene and should not replace the implementation roadmap in `ROADMAP.md`.
 
 ## Current Position
 
-- Branch: `codex/product-offers`.
+- Branch: `codex/command-reference`.
 - Base branch: `main`.
-- Main already includes the private bootstrap, offline search expansion, product URL/inspection, watchlist, cache inspection, and export commands.
-- Current branch adds first-pass `product offers` ranking from one explicit product page's static offer metadata.
+- Main already includes the private bootstrap, offline search expansion, product URL/inspection/offers, watchlist, cache inspection, export commands, and adaptive-agent feedback loop.
+- Current branch adds a detailed command reference and README link so every public command is explained before public testing.
 
 ## Recommended Phases
 
-### Phase 0: Product Offers PR Closure
+### Phase 0: Command Reference PR Closure
 
-Goal: land first-pass offer ranking without expanding the consent boundary.
+Goal: finish private documentation readiness before broader user testing.
 
-- Keep the scope to `product offers`, the local ranking helper, schemas, tests, and docs.
-- Confirm invalid model ids fail before fetching.
-- Confirm the command fetches only `model.aspx?modelid=<id>` with omitted credentials and redirect errors.
+- Keep the scope to command explanations, README links, changelog, and PR status hygiene.
+- Confirm the documented command list matches `zap schema list`.
+- Run the full local gate and representative CLI smoke checks.
 - Merge only after the local gate and CI are green and the PR body reflects shipped behavior.
 
 ### Phase 1: Product Inspection Hardening
@@ -44,9 +44,9 @@ Goal: improve usability without changing the consent boundary.
 
 Goal: let the CLI learn from use while keeping changes explicit and reviewable.
 
-- Add local preference/profile commands for category, budget, output format, language, and vendor preferences.
-- Add diagnostic summaries for command failures, warnings, and recurring next actions.
-- Add a skill-update proposal command that produces a diff or Markdown recommendation, not an automatic overwrite.
+- Harden local preference/profile commands for category, budget, output format, language, and vendor preferences.
+- Expand diagnostic summaries for command failures, warnings, and recurring next actions.
+- Expand skill-update proposal output into diffs or Markdown recommendations, not automatic overwrites.
 - Keep all learning data local by default and exclude cookies, sessions, account data, checkout state, and personal identifiers.
 
 ### Phase 3: Local Search Expansion
