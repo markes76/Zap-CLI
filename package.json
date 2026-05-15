@@ -25,10 +25,12 @@
     "zap": "./dist/cli.js"
   },
   "files": [
+    "assets",
     "dist",
     "docs",
     "README.md",
     "LICENSE",
+    "NOTICE.md",
     "SECURITY.md"
   ],
   "scripts": {

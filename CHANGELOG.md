@@ -17,6 +17,7 @@
 - Added a public security policy.
 - Added GitHub issue and pull request templates for public community testing.
 - Updated package metadata for a public source repository while keeping npm publication as a later release decision.
+- Added the ZAP logo as a brand-identification asset with an explicit notice that the project is unofficial and the logo is not MIT-licensed.
 
 ## 0.1.0 - Private Bootstrap
 
