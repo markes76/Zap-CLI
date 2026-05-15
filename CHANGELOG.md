@@ -7,6 +7,8 @@
 - Added local SQLite/FTS sync and offline feed search.
 - Added local watchlist commands.
 - Added product/search URL generation without fetching blocked pages.
+- Added bounded `product inspect --model-id` for one explicit public product page.
 - Added command schema introspection.
 - Added tests, docs, and CI-ready scripts.
 - Added agent recon notes and a draft `zap-cli` usage skill.
+- Added next-step, PR-status, and data-sharing/export design docs.

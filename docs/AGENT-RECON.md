@@ -44,13 +44,20 @@ Ranking should stay deterministic and local: FTS score, exact phrase boost, all-
 
 ## Product Procurement Roadmap
 
-Highest-value next command:
+Initial implemented command:
 
 ```bash
-zap product inspect --model-id 1253618 --include summary,offers --limit 25
+zap product inspect --model-id 1253618 --output json
 ```
 
-Suggested output groups:
+Current output groups:
+
+- Source URL, fetched timestamp, model id, title, safe links, warnings.
+- JSON-LD Product fields when present.
+- AggregateOffer fields and nested offers when present.
+- Conservative static vendor-card attributes when reliable.
+
+Future output groups:
 
 - Product summary: title, brand, category, image, currency, min/max price, product rating, review count, source URL, fetched timestamp.
 - Key specs: storage, screen size, announcement year, chipset, plus `specUrl`.

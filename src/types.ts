@@ -18,6 +18,60 @@ export interface ProductUrls {
   compareUrl: string;
 }
 
+export interface JsonLdProductFields {
+  name?: string;
+  description?: string;
+  brand?: string;
+  sku?: string;
+  mpn?: string;
+  gtin?: string;
+  image?: string[];
+  url?: string;
+}
+
+export interface ProductOffer {
+  sellerName?: string;
+  price?: number;
+  priceCurrency?: string;
+  availability?: string;
+  url?: string;
+}
+
+export interface ProductAggregateOffer {
+  lowPrice?: number;
+  highPrice?: number;
+  offerCount?: number;
+  priceCurrency?: string;
+  offers?: ProductOffer[];
+}
+
+export interface ProductInspectionLinks {
+  canonicalUrl: string;
+  reviewsUrl: string;
+  specUrl: string;
+}
+
+export interface ProductVendorCard {
+  vendorName: string;
+  priceIls: number;
+  shippingText?: string;
+  availabilityText?: string;
+  rating?: number;
+  reviewCount?: number;
+}
+
+export interface ProductInspection {
+  sourceUrl: string;
+  fetchedAt: string;
+  modelId: string;
+  title?: string;
+  jsonLdProduct?: JsonLdProductFields;
+  aggregateOffer?: ProductAggregateOffer;
+  links: ProductInspectionLinks;
+  vendorCards: ProductVendorCard[];
+  warnings: string[];
+}
+
 export interface WatchItem {
   id: string;
   modelId: string;

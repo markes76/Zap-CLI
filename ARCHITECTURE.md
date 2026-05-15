@@ -7,13 +7,14 @@
 ## Data Sources
 
 - Official RSS feeds: fetched and normalized by `src/rss.ts`.
+- Explicit product pages: `src/product.ts` fetches one validated `model.aspx?modelid=<id>` page with no credentials and redirects disabled.
 - Generated handoff URLs: built by `src/urls.ts`.
 - Local user state: stored in SQLite by `src/store.ts`.
 - Command contracts: exposed from `src/schema.ts`.
 
 ## Command Flow
 
-`src/cli.ts` passes `process.argv` to `runCli` in `src/app.ts`. `runCli` parses global flags, dispatches a command, selects requested fields, formats output, and converts all errors to JSON envelopes.
+`src/cli.ts` passes `process.argv` to `runCli` in `src/app.ts`. `runCli` parses global flags, dispatches a command, selects requested fields, formats output, and converts all errors to JSON envelopes. Product inspection validates the model id before any network request and only fetches the canonical product page generated from that id.
 
 ## Local Cache
 
@@ -31,4 +32,4 @@ Machine output is JSON by default when stdout is not a TTY. NDJSON is supported 
 
 ## Consent-Safe Boundary
 
-The implementation deliberately avoids blocked or sensitive ZAP surfaces. `search url` and `product url` generate links for browser handoff, and do not fetch those pages.
+The implementation deliberately avoids blocked or sensitive ZAP surfaces. `search url` and `product url` generate links for browser handoff and do not fetch those pages. `product inspect` is the only non-RSS product fetch path; it requests one public model page with `credentials: "omit"` and `redirect: "error"`, and it does not fetch search, filter, order, account, checkout, redirect, or private API endpoints.

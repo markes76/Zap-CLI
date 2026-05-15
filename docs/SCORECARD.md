@@ -11,7 +11,8 @@
 ## ZAP Consent Boundary
 
 - RSS fetches use official category feeds only.
-- Search and product commands generate handoff URLs.
+- `product inspect --model-id` fetches one validated public product page with no credentials or redirects.
+- Search URL commands and product URL commands generate handoff URLs.
 - Blocked search/filter/order/account/checkout/redirect endpoints are not fetched.
 - Local watchlist and cache data stay on the user's machine.
 

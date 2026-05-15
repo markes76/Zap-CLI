@@ -4,6 +4,7 @@ import { aboutZapCli } from "./about.js";
 import { categories } from "./categories.js";
 import { CliError, exitCodeFor, toErrorEnvelope } from "./errors.js";
 import { formatOutput, resolveOutputFormat, selectFields } from "./output.js";
+import { inspectProduct } from "./product.js";
 import { fetchRssFeed } from "./rss.js";
 import { getSchema, listSchemas } from "./schema.js";
 import type { CliResult, GlobalOptions, OutputFormat, RunContext, WatchItemInput } from "./types.js";
@@ -88,6 +89,11 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
   if (noun === "product" && verb === "url") {
     const modelId = requireFlag(parsed, "model-id", "Run zap schema get product-url for command details.");
     return getProductUrls(modelId);
+  }
+
+  if (noun === "product" && verb === "inspect") {
+    const modelId = requireFlag(parsed, "model-id", "Run zap schema get product-inspect for command details.");
+    return inspectProduct(modelId, { timeoutMs: parsed.global.timeoutMs });
   }
 
   if (noun === "search" && verb === "url") {

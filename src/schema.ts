@@ -57,6 +57,14 @@ export const commandSchemas: CommandSchema[] = [
     safety: "Generates URLs only; does not fetch them."
   },
   {
+    key: "product-inspect",
+    name: "product inspect",
+    description: "Fetch one public ZAP product page and extract static product metadata.",
+    usage: "zap product inspect --model-id 1253558",
+    output: "Source URL, fetch timestamp, JSON-LD Product fields, AggregateOffer fields, safe inferred links, vendor card metadata when reliable, and warnings.",
+    safety: "Fetches only https://www.zap.co.il/model.aspx?modelid=<id> after numeric model-id validation; no cookies, auth, redirects, search, filters, ordering, or hidden API crawling."
+  },
+  {
     key: "search-url",
     name: "search url",
     description: "Generate the official ZAP search URL without fetching it.",

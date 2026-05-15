@@ -8,7 +8,7 @@ This project follows the spirit of [mvanhorn/cli-printing-press](https://github.
 
 `zap` is intentionally conservative:
 
-- Fetches only official ZAP RSS feeds under `https://www.zap.co.il/xmls/general/rss.aspx`.
+- Fetches official ZAP RSS feeds and one explicit public product page when `product inspect --model-id` is used.
 - Generates product and search handoff URLs without fetching blocked search, filter, sort, account, checkout, redirect, or tracking endpoints.
 - Stores watchlists and synced search data locally.
 - Does not use browser cookies, session extraction, HAR reverse engineering, checkout automation, or private APIs.
@@ -49,12 +49,13 @@ zap feed list --category electric --limit 20
 zap feed sync --category electric --limit 20
 zap feed search Wiim --limit 10
 zap product url --model-id 1253558
+zap product inspect --model-id 1253558
 zap search url "iphone 17"
 zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17"
 zap watch list
 zap watch remove --id <watch-id>
 zap schema list
-zap schema get product-url
+zap schema get product-inspect
 ```
 
 Global flags:
@@ -90,6 +91,8 @@ pnpm build
 ```
 
 The integration test calls one official RSS feed with a small limit and timeout.
+
+Additional project notes live in `docs/`, including the current scorecard, agent reconnaissance, next steps, PR status, and data-sharing/export design.
 
 ## Release Status
 

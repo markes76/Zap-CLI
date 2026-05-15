@@ -7,47 +7,19 @@ description: Use when helping a user or agent find products on zap.co.il with ZA
 
 ## Overview
 
-Use `zap` as a consent-safe shopping research CLI for ZAP. Treat it as a deterministic source for official RSS items, local cache/search state, schema metadata, URL handoffs, and local watchlists. It is not a scraper and does not verify live offers, vendors, inventory, checkout state, or account-specific data.
+Use `zap` as a consent-safe shopping research CLI for ZAP. It is authoritative for official RSS items, local cache/search state, generated handoff URLs, local watchlists, bounded product-page inspection, and command schemas. It is not a general scraper and does not verify checkout state or account-specific data.
 
-Prefer JSON for agent workflows:
+For agent workflows, request JSON explicitly:
 
 ```bash
 zap schema list --output json
 ```
 
-When running from the source repo instead of an installed binary, use `pnpm exec tsx src/cli.ts ...` during development or `node dist/cli.js ...` after `pnpm build`.
+From this source repo, use `pnpm dev -- ...` or `pnpm exec tsx src/cli.ts ...` during development. After `pnpm build`, use `node dist/cli.js ...`. For installed usage, use `zap ...`.
 
-## When to Use
+## Safe Command Surface
 
-Use this skill when the task involves:
-
-- Finding product candidates from official ZAP RSS categories.
-- Comparing safe known data from RSS/local cache results.
-- Generating ZAP search or product handoff URLs for a user to open.
-- Building or reviewing a local buying watchlist.
-- Planning procurement research while keeping verified CLI data separate from browser or user-supplied observations.
-
-Do not use it to automate ZAP account flows, checkout, private APIs, or blocked pages.
-
-## Safety Boundary
-
-Allowed surfaces:
-
-- Official RSS feeds under `https://www.zap.co.il/xmls/general/rss.aspx`.
-- Local SQLite cache and full-text search.
-- Generated product/search handoff URLs.
-- Local watchlist commands.
-- Local schema/about metadata.
-
-Forbidden unless there is explicit written authorization and a separate legal/safety review:
-
-- Fetching or scraping blocked search, filter, sort, order, account, checkout, redirect, or tracking endpoints.
-- Browser cookies, session extraction, HAR reverse engineering, auth replay, private APIs, or checkout automation.
-- Treating generated URLs as fetched facts. `product url` and `search url` create links only.
-
-## Workflow Recipes
-
-Discover supported commands and schemas:
+Confirm current commands with schema before relying on a command that may have changed:
 
 ```bash
 zap schema list --output json
@@ -55,73 +27,94 @@ zap schema get feed-search --output json
 zap about --output json
 ```
 
-Expected shapes:
+Current schema-backed commands:
+
+| Command | Safe use |
+| --- | --- |
+| `about` | Show purpose, sources, and safety policy. No ZAP page fetch. |
+| `categories list` | List static RSS category metadata. |
+| `feed list --category <id> --limit <n>` | Fetch one bounded official RSS category feed. |
+| `feed sync --category <id> --limit <n>` | Fetch one bounded official RSS category feed and cache normalized items locally. |
+| `feed search <query> --limit <n>` | Search local SQLite FTS cache only. No ZAP network request. |
+| `product url --model-id <id>` | Generate product/reviews/compare URLs only. Does not fetch them. |
+| `product inspect --model-id <id>` | Fetch one validated public product page and extract static JSON-LD/product metadata. |
+| `search url <query>` | Generate official search handoff URL with `fetched: false`. Does not fetch blocked search pages. |
+| `watch add/list/remove` | Manage local SQLite watchlist items. |
+| `schema list/get` | Read offline command contracts. |
+
+Confirm details with `zap schema get product-inspect --output json` before relying on field-level behavior.
+
+## Consent Boundary
+
+Allowed by the current CLI:
+
+- Fetch official RSS feeds under `https://www.zap.co.il/xmls/general/rss.aspx`.
+- Fetch one explicit public product page generated from a validated numeric model id: `https://www.zap.co.il/model.aspx?modelid=<id>`.
+- Search local SQLite/FTS cache created from those RSS feeds.
+- Generate ZAP product/search/review/compare handoff URLs.
+- Store and read local watchlists.
+- Read local schema/about metadata.
+
+Do not use the CLI, browser automation, or improvised scripts to fetch or scrape blocked search, filter, sort, order, account, checkout, redirect, tracking, private API, cookie/session, HAR, or auth-replay flows. Generated URLs are links for the user or an explicitly authorized browser session; they are not fetched facts.
+
+## Output Expectations
+
+- `--output json|text|ndjson` and `-o json|text|ndjson` are supported.
+- When stdout is not a TTY, the default output is JSON. In an interactive terminal, the default is text.
+- Use `--output json` for agent parsing. JSON and NDJSON contain no ANSI formatting.
+- `--output ndjson` emits one JSON line per array item; object wrappers such as `{ "commands": [...] }` remain a single JSON line.
+- `--select id,title,modelId,productUrl` selects top-level fields. It is most useful for array results like `feed list`, not nested wrappers like `schema list`.
+- `--quiet` suppresses successful stdout. Errors still use JSON on stderr.
+- Errors always use a JSON envelope on stderr and exit with stable codes, for example `INVALID_ARGUMENTS` exits `2`, `NOT_FOUND` exits `5`, `NETWORK_ERROR` exits `7`, and `REMOTE_API_ERROR` exits `8`.
+
+Error shape:
 
 ```json
-{ "commands": [{ "key": "feed-search", "name": "feed search", "description": "..." }] }
+{ "error": { "code": "INVALID_ARGUMENTS", "message": "...", "hint": "..." } }
 ```
 
-Discover RSS categories:
+## Finding Products Safely
+
+Start with categories:
 
 ```bash
 zap categories list --output json
 ```
 
-Expected shape:
-
-```json
-{ "categories": [{ "id": "electric", "hebrewName": "...", "englishName": "...", "rssUrl": "..." }] }
-```
-
-Fetch or sync official RSS:
+Fetch current official RSS candidates without touching blocked search pages:
 
 ```bash
 zap feed list --category electric --limit 20 --output json
-zap feed sync --category electric --limit 20 --output json
+zap feed list --category electric --limit 20 --select id,title,modelId,productUrl --output json
 ```
 
-Expected shapes:
-
-```json
-[
-  {
-    "id": "1253558",
-    "title": "...",
-    "descriptionText": "...",
-    "category": "electric",
-    "publishedAt": "2026-05-15T00:00:00.000Z",
-    "modelId": "1253558",
-    "productUrl": "https://www.zap.co.il/model.aspx?modelid=1253558",
-    "imageUrl": "https://..."
-  }
-]
-```
-
-```json
-{ "category": "electric", "synced": 20, "cachePath": "/.../zap.sqlite" }
-```
-
-Search local cache only:
+Build a reusable local cache and search it offline:
 
 ```bash
+zap feed sync --category electric --limit 50 --output json
 zap feed search "Wiim" --limit 10 --output json
-zap feed search "iphone" --select id,title,modelId,productUrl --output json
+zap feed search "iphone" --limit 10 --select id,title,modelId,productUrl --output json
 ```
 
-Expected shape: an array of cached RSS items. This command makes no network request; run `feed sync` first if results are empty.
-
-Generate handoff URLs:
+If local RSS results are empty or too broad, generate a handoff URL instead of pretending to scrape search results:
 
 ```bash
 zap search url "iphone 17" --output json
-zap product url --model-id 1253558 --output json
 ```
 
-Expected shapes:
+Expected handoff shape:
 
 ```json
 { "query": "iphone 17", "searchUrl": "https://www.zap.co.il/search.aspx?keyword=iphone+17", "fetched": false }
 ```
+
+For a known model id, generate links:
+
+```bash
+zap product url --model-id 1253558 --output json
+```
+
+Expected shape:
 
 ```json
 {
@@ -132,15 +125,45 @@ Expected shapes:
 }
 ```
 
-Manage a local watchlist:
+Inspect one explicit public product page when the user needs product-page evidence:
 
 ```bash
-zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17" --output json
+zap product inspect --model-id 1253558 --output json
+```
+
+Expected top-level fields:
+
+```json
+{
+  "sourceUrl": "https://www.zap.co.il/model.aspx?modelid=1253558",
+  "fetchedAt": "2026-05-15T00:00:00.000Z",
+  "modelId": "1253558",
+  "title": "Product title when available",
+  "jsonLdProduct": {},
+  "aggregateOffer": {},
+  "links": {
+    "canonicalUrl": "https://www.zap.co.il/model.aspx?modelid=1253558",
+    "reviewsUrl": "https://www.zap.co.il/ratemodel.aspx?modelid=1253558",
+    "specUrl": "https://www.zap.co.il/compmodels.aspx?modelid=1253558"
+  },
+  "vendorCards": [],
+  "warnings": []
+}
+```
+
+Treat `vendorCards` as opportunistic static metadata. If it is empty or a warning is present, ask for browser/user confirmation before ranking offers.
+
+## Watchlists
+
+Watchlists are local user state. They do not monitor live prices unless the user later supplies observations or a future command adds that capability.
+
+```bash
+zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17" --notes "wait for sale" --output json
 zap watch list --output json
 zap watch remove --id <watch-id> --output json
 ```
 
-Expected shapes:
+Watch item shape:
 
 ```json
 {
@@ -150,44 +173,48 @@ Expected shapes:
   "targetPriceIls": 2500,
   "productUrl": "https://www.zap.co.il/model.aspx?modelid=1253558",
   "specUrl": "https://www.zap.co.il/compmodels.aspx?modelid=1253558",
-  "notes": null,
+  "notes": "wait for sale",
   "createdAt": "2026-05-15T00:00:00.000Z"
 }
 ```
 
-```json
-{ "id": "<watch-id>", "removed": true }
-```
+Default cache path is `~/.cache/zap-cli/zap.sqlite`. Override with `--cache-dir <path>` or `ZAP_CACHE_DIR`.
 
-## Procurement Assistant Guidance
+## Procurement Guidance
 
-When making buying recommendations, separate evidence into:
+When helping a user choose what to buy, keep evidence labels explicit:
 
-- **Verified by CLI**: command output from `about`, `categories list`, `feed list`, `feed sync`, `feed search`, `product url`, `search url`, `watch *`, or `schema *`.
-- **Browser/user observed**: model page details, vendor names, prices, shipping, warranty, stock, ratings, or screenshots supplied by the user or observed in an authorized browser session.
-- **Inference**: your reasoning from the verified and observed data.
+- **Verified by CLI**: output from `about`, `categories list`, `feed list`, `feed sync`, `feed search`, `product url`, `product inspect`, `search url`, `watch *`, or `schema *`.
+- **Browser/user observed**: model page details, vendor names, prices, shipping, warranty, stock, ratings, screenshots, or copied text supplied by the user or observed in an authorized browser session.
+- **Inference**: reasoning from the verified and observed data.
 
-Ask for a model id or exact ZAP URL when offer/vendor scoring is required. If the user only gives a product name, generate a search handoff URL and/or search synced RSS cache, then ask the user to provide the chosen model URL or model id before scoring live offers.
+Use this workflow:
 
-Do not infer current prices, store trust, stock, shipping, or warranty from RSS titles or generated URLs alone. Cite the data source category in recommendations, for example: "CLI RSS cache", "generated handoff URL", or "user-supplied ZAP model page".
+1. Clarify the product need, budget, constraints, and whether the user wants Hebrew/ZAP-specific results.
+2. Use `categories list`, `feed list`, and optionally `feed sync`/`feed search` to find RSS-backed candidates.
+3. Use `search url` for broader discovery handoff when RSS/local cache is insufficient.
+4. Use `product inspect` once a model id is known to collect static product-page evidence. Use `product url` for handoff links.
+5. Recommend only from labeled evidence. Do not infer current price, seller quality, stock, shipping, warranty, or import status from RSS titles or generated URLs alone.
+6. Use `watch add` to save shortlisted model ids and target prices locally.
+
+Good wording:
+
+- "The CLI RSS cache found these model candidates."
+- "This is a generated ZAP search URL; I have not fetched the search page."
+- "I need the model page details or your screenshot before ranking live offers."
+
+Avoid wording that claims the CLI scraped, inspected, monitored, or verified blocked ZAP flows.
 
 ## Failure Handling
 
-- Invalid arguments exit with code `2` and emit a JSON error envelope on stderr:
-
-```json
-{ "error": { "code": "INVALID_ARGUMENTS", "message": "...", "hint": "..." } }
-```
-
-- Other notable error codes: `NOT_FOUND` exits `5`, `NETWORK_ERROR` exits `7`, and `REMOTE_API_ERROR` exits `8`.
-- Default cache path is `~/.cache/zap-cli/zap.sqlite`.
-- Override cache location with `--cache-dir <path>` or `ZAP_CACHE_DIR`.
-- `feed search` reads only the local cache. On a new or empty cache it returns `[]`; sync an official RSS category first.
-- `feed list` and `feed sync` may return or sync zero items if the RSS feed is empty or items cannot be normalized to model ids. Fall back to handoff URLs and ask the user for exact model URLs when needed.
+- `feed search` returns `[]` on a new or empty cache; run `feed sync` for relevant categories first.
+- `feed list` and `feed sync` may return zero items if the RSS feed is empty or items cannot be normalized to model ids.
+- Invalid or missing model ids produce `INVALID_ARGUMENTS`; model ids must be numeric, for example `1253558`.
+- Network failures apply to official RSS fetches and explicit product inspection. Fall back to generated handoff URLs and user-provided model details when ZAP is unavailable.
 
 ## Current Limitations
 
-- There is no formal procurement-grade offer extraction command yet.
-- There is no supported command for live vendor scoring, checkout, account-specific prices, stock, delivery estimates, or warranty extraction.
-- `product url` and `search url` do not fetch ZAP pages.
-- A future `product inspect --url` command may inspect one user-supplied model URL, but it is not currently available. Do not document or call it as an existing command.
+- No supported command verifies checkout state, current stock, final delivery estimates, warranty terms, import status, or account-specific pricing.
+- No supported command fetches ZAP search/filter/sort/order/account/checkout/redirect pages.
+- `product url` and `search url` generate URLs only.
+- Local watchlists store targets and notes; they do not verify price changes.
