@@ -1,10 +1,20 @@
 # ZAP CLI
 
+<table>
+  <tr>
+    <td align="center" bgcolor="#111111">
+      <img src="assets/brand/zap-logo.png" alt="ZAP logo" width="193">
+    </td>
+  </tr>
+</table>
+
 Consent-safe consumer CLI for [zap.co.il](https://www.zap.co.il/), built for shoppers, researchers, and AI agents that need deterministic shopping research commands.
 
 `zap` follows the spirit of [mvanhorn/cli-printing-press](https://github.com/mvanhorn/cli-printing-press): JSON-first output, schema introspection, local SQLite/FTS cache, clear exit codes, and documentation that stays current with the CLI.
 
 The adaptive-agent direction is local and reviewable: preferences, feedback, diagnostics, and skill drafts are stored locally and surfaced as suggestions. The CLI does not silently rewrite itself, shared skills, or user data.
+
+This is an unofficial project. The ZAP logo is included only to identify the website this CLI targets; see [NOTICE.md](NOTICE.md).
 
 עברית: [תקציר בעברית](#עברית) נמצא בהמשך הקובץ.
 
@@ -202,7 +212,7 @@ The integration test calls one official RSS feed with a small limit and timeout.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+MIT License for project code. See [LICENSE](LICENSE). The ZAP logo is not covered by the MIT license; see [NOTICE.md](NOTICE.md).
 
 ---
 
@@ -211,6 +221,8 @@ MIT License. See [LICENSE](LICENSE).
 `ZAP CLI` הוא כלי שורת פקודה בטוח וזהיר למחקר קניות באתר [zap.co.il](https://www.zap.co.il/). הכלי מיועד למשתמשים, חוקרים וסוכני AI שצריכים פלט יציב, קריא למכונה, ולא אינטראקטיבי.
 
 הכלי לא מנסה לעקוף את ZAP. הוא משתמש במקורות ציבוריים ומוגבלים: RSS רשמי, יצירת קישורי מעבר, ועמוד מוצר ציבורי אחד רק כאשר המשתמש מבקש זאת במפורש עם `--model-id`.
+
+זהו פרויקט לא רשמי. הלוגו של ZAP מופיע לצורך זיהוי האתר בלבד; ראו [NOTICE.md](NOTICE.md).
 
 ## מה הכלי עושה
 
@@ -338,4 +350,4 @@ pnpm build
 
 ## רישיון
 
-MIT License. ראו [LICENSE](LICENSE).
+MIT License עבור קוד הפרויקט. ראו [LICENSE](LICENSE). הלוגו של ZAP אינו כלול ברישיון MIT; ראו [NOTICE.md](NOTICE.md).
