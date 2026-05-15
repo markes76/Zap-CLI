@@ -5,6 +5,7 @@
 - Bootstrap private GitHub repository.
 - Ship consent-safe RSS, URL generation, watchlist, schema, and local SQLite/FTS commands.
 - Ship bounded `product inspect --model-id` for one explicit public product page.
+- Ship `search sync`, `search local`, and `search suggest` for better offline discovery from official RSS/cache data.
 - Keep docs and changelog updated with each feature branch.
 - Verify JSON-first behavior for agent usage.
 
@@ -14,7 +15,6 @@
 - Add `zap feed export --output ndjson`.
 - Add cache inspection commands.
 - Add command examples to schema output.
-- Expand local search with deterministic ranking over official RSS/cache data.
 - Add first export commands for RSS and watchlist data.
 
 ## v0.3 Procurement Research

@@ -8,6 +8,7 @@
 
 - Official RSS feeds: fetched and normalized by `src/rss.ts`.
 - Explicit product pages: `src/product.ts` fetches one validated `model.aspx?modelid=<id>` page with no credentials and redirects disabled.
+- Local search planning: `src/search.ts` expands category lists, validates search sort modes, and builds search handoff next-command hints.
 - Generated handoff URLs: built by `src/urls.ts`.
 - Local user state: stored in SQLite by `src/store.ts`.
 - Command contracts: exposed from `src/schema.ts`.
@@ -25,6 +26,8 @@ Tables:
 - `rss_items` for normalized RSS entries.
 - `rss_items_fts` for local full-text search.
 - `watch_items` for local shopping shortlist entries.
+
+`search sync` can populate multiple official RSS categories into the same cache. `search local` and `search suggest` only read that cache and never fetch ZAP search result pages.
 
 ## Output Contract
 

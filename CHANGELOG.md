@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added `search sync` for bounded multi-category official RSS cache population.
+- Added `search local` for offline cache search with optional category filter and sort mode.
+- Added `search suggest` for local candidates plus generated ZAP search handoff URLs.
+
 ## 0.1.0 - Private Bootstrap
 
 - Added TypeScript CLI scaffold with `zap` binary.

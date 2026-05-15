@@ -48,6 +48,9 @@ zap categories list
 zap feed list --category electric --limit 20
 zap feed sync --category electric --limit 20
 zap feed search Wiim --limit 10
+zap search sync --category electric,comp --limit 20
+zap search local "iphone 17" --category electric --sort relevance --limit 10
+zap search suggest "iphone 17" --limit 5
 zap product url --model-id 1253558
 zap product inspect --model-id 1253558
 zap search url "iphone 17"

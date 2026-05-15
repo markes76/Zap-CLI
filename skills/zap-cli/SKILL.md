@@ -36,6 +36,9 @@ Current schema-backed commands:
 | `feed list --category <id> --limit <n>` | Fetch one bounded official RSS category feed. |
 | `feed sync --category <id> --limit <n>` | Fetch one bounded official RSS category feed and cache normalized items locally. |
 | `feed search <query> --limit <n>` | Search local SQLite FTS cache only. No ZAP network request. |
+| `search sync --category <id|all|comma-list> --limit <n>` | Fetch bounded official RSS feeds and populate the local cache. |
+| `search local <query> --category <id|comma-list> --sort relevance|newest` | Search local cache only with optional filters. |
+| `search suggest <query>` | Return local cache candidates plus a generated ZAP search handoff URL. |
 | `product url --model-id <id>` | Generate product/reviews/compare URLs only. Does not fetch them. |
 | `product inspect --model-id <id>` | Fetch one validated public product page and extract static JSON-LD/product metadata. |
 | `search url <query>` | Generate official search handoff URL with `fetched: false`. Does not fetch blocked search pages. |
@@ -95,6 +98,17 @@ zap feed sync --category electric --limit 50 --output json
 zap feed search "Wiim" --limit 10 --output json
 zap feed search "iphone" --limit 10 --select id,title,modelId,productUrl --output json
 ```
+
+For broader RSS-backed discovery, sync several categories and use the `search` namespace:
+
+```bash
+zap search sync --category electric,comp --limit 50 --output json
+zap search sync --category all --limit 10 --output json
+zap search local "iphone 17" --category electric --sort relevance --limit 10 --output json
+zap search suggest "iphone 17 pro max" --limit 5 --output json
+```
+
+`search suggest` returns local cache results, a `cacheStatus` of `searched`, `empty`, or `unavailable`, and a generated ZAP search URL with `fetched: false`; it does not fetch the search page. Its `nextCommands` are structured `argv` arrays, not shell strings, so preserve them as arrays when handing work to another agent or process.
 
 If local RSS results are empty or too broad, generate a handoff URL instead of pretending to scrape search results:
 
@@ -192,10 +206,11 @@ Use this workflow:
 
 1. Clarify the product need, budget, constraints, and whether the user wants Hebrew/ZAP-specific results.
 2. Use `categories list`, `feed list`, and optionally `feed sync`/`feed search` to find RSS-backed candidates.
-3. Use `search url` for broader discovery handoff when RSS/local cache is insufficient.
-4. Use `product inspect` once a model id is known to collect static product-page evidence. Use `product url` for handoff links.
-5. Recommend only from labeled evidence. Do not infer current price, seller quality, stock, shipping, warranty, or import status from RSS titles or generated URLs alone.
-6. Use `watch add` to save shortlisted model ids and target prices locally.
+3. Use `search sync` and `search local` when the user needs multi-category offline discovery.
+4. Use `search suggest` or `search url` for broader discovery handoff when RSS/local cache is insufficient.
+5. Use `product inspect` once a model id is known to collect static product-page evidence. Use `product url` for handoff links.
+6. Recommend only from labeled evidence. Do not infer current price, seller quality, stock, shipping, warranty, or import status from RSS titles or generated URLs alone.
+7. Use `watch add` to save shortlisted model ids and target prices locally.
 
 Good wording:
 
@@ -208,6 +223,7 @@ Avoid wording that claims the CLI scraped, inspected, monitored, or verified blo
 ## Failure Handling
 
 - `feed search` returns `[]` on a new or empty cache; run `feed sync` for relevant categories first.
+- `search local` returns `[]` on a new or empty cache; run `search sync --category <id|all>` first.
 - `feed list` and `feed sync` may return zero items if the RSS feed is empty or items cannot be normalized to model ids.
 - Invalid or missing model ids produce `INVALID_ARGUMENTS`; model ids must be numeric, for example `1253558`.
 - Network failures apply to official RSS fetches and explicit product inspection. Fall back to generated handoff URLs and user-provided model details when ZAP is unavailable.
