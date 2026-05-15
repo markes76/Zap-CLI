@@ -155,6 +155,29 @@ export interface WatchExportEnvelope {
 
 export type ExportEnvelope = FeedExportEnvelope | WatchExportEnvelope;
 
+export interface ExportFileResult {
+  outputPath: string;
+  format: OutputFormat;
+  recordType: ExportRecordType;
+  itemCount: number;
+  bytes: number;
+}
+
+export interface CacheCategoryInfo {
+  category: string;
+  count: number;
+  newestPublishedAt: string | null;
+}
+
+export interface CacheInfo {
+  cachePath: string;
+  exists: boolean;
+  readable: boolean;
+  rssItemCount: number;
+  watchItemCount: number;
+  categories: CacheCategoryInfo[];
+}
+
 export interface GlobalOptions {
   format: OutputFormat;
   quiet: boolean;

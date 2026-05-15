@@ -25,6 +25,14 @@ export const commandSchemas: CommandSchema[] = [
     safety: "Uses static category metadata from the public RSS page."
   },
   {
+    key: "cache-info",
+    name: "cache info",
+    description: "Inspect local SQLite cache status and counts.",
+    usage: "zap cache info",
+    output: "Cache path, existence/readability flags, RSS/watch counts, and per-category RSS counts.",
+    safety: "Offline local read only; does not create a missing cache."
+  },
+  {
     key: "feed-list",
     name: "feed list",
     description: "Fetch a bounded official ZAP RSS feed.",
@@ -36,8 +44,8 @@ export const commandSchemas: CommandSchema[] = [
     key: "feed-export",
     name: "feed export",
     description: "Export a bounded official ZAP RSS category feed.",
-    usage: "zap feed export --category electric --limit 20 --output json|ndjson|csv",
-    output: "JSON envelope with schemaVersion, recordType=rss_item, category, exportedAt, sourceUrl, provenance, and items; NDJSON rows include nested provenance; CSV rows include flattened provenance fields plus scalar RSS item fields.",
+    usage: "zap feed export --category electric --limit 20 --output json|ndjson|csv [--out <path>]",
+    output: "Without --out: JSON envelope with schemaVersion, recordType=rss_item, category, exportedAt, sourceUrl, provenance, and items; NDJSON rows include nested provenance; CSV rows include flattened provenance fields plus scalar RSS item fields. With --out: writes the exact file path and returns a JSON status object with outputPath, format, recordType, itemCount, and bytes.",
     safety: "Fetches only official /xmls/general/rss.aspx category feeds."
   },
   {
@@ -124,8 +132,8 @@ export const commandSchemas: CommandSchema[] = [
     key: "watch-export",
     name: "watch export",
     description: "Export local watchlist items.",
-    usage: "zap watch export --output json|csv [--include-notes]",
-    output: "JSON envelope with schemaVersion, recordType=watch_item, exportedAt, provenance, notesIncluded, and items; notes are null unless --include-notes is used. CSV rows include flattened provenance fields plus scalar watch item fields.",
+    usage: "zap watch export --output json|csv [--include-notes] [--out <path>]",
+    output: "Without --out: JSON envelope with schemaVersion, recordType=watch_item, exportedAt, provenance, notesIncluded, and items; notes are null unless --include-notes is used. CSV rows include flattened provenance fields plus scalar watch item fields. With --out: writes the exact file path and returns a JSON status object with outputPath, format, recordType, itemCount, and bytes.",
     safety: "Offline local read; no ZAP network request."
   },
   {

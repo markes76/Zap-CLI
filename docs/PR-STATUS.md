@@ -5,18 +5,16 @@ Last inspected: 2026-05-15.
 ## Current Pull Request
 
 - Repository: `markes76/Zap-CLI`.
-- Branch: `codex/bootstrap`.
+- Branch: `codex/export-out-cache`.
 - Base: `main`.
-- PR: [#1 `[codex] bootstrap zap cli`](https://github.com/markes76/Zap-CLI/pull/1).
-- State at last GitHub inspection: open draft, mergeable with clean merge state.
-- Review status at last GitHub inspection: no review decision yet; no requested reviewers recorded.
-- CI at last GitHub inspection: `CI / test` completed successfully.
-- Live mutable metadata should be checked with `gh pr view 1 --json state,isDraft,mergeable,commits,statusCheckRollup,url` before review or merge.
+- PR: not opened yet for this branch.
+- Main already includes the bootstrap, local search expansion, and stdout export PRs.
+- Live mutable metadata should be checked with `gh pr view <number> --json state,isDraft,mergeable,commits,statusCheckRollup,url` after opening the PR.
 
 ## Local Branch Status
 
-- Local checkout was on `codex/bootstrap`, tracking `origin/codex/bootstrap`.
-- The branch now includes the private bootstrap, agent workflow docs, bounded `product inspect --model-id`, updated skill guidance, and data-sharing/export design.
+- Local checkout is on `codex/export-out-cache`.
+- The branch adds read-only `cache info`, exact-file export `--out <path>`, matching schema updates, tests, and docs.
 - Re-run the full local check set before marking the PR ready for review.
 
 ## PR Summary Draft
@@ -25,14 +23,14 @@ Use this concise summary if the PR body needs a hygiene update:
 
 ```markdown
 ## Summary
-- Add bounded `zap product inspect --model-id` for one explicit public product page.
-- Document current next steps, PR hygiene, and data-sharing/export design.
-- Update skill and project docs to reflect the current command surface.
+- Add read-only `zap cache info` for local SQLite cache counts without creating missing cache files.
+- Add exact-file `--out <path>` support for feed/watch export commands.
+- Update command schemas, README, roadmap, architecture, scorecard, data-sharing notes, skill docs, and tests.
 
 ## Verification
 - Run `pnpm test`, `pnpm check`, and `pnpm build`.
-- Smoke-test schema introspection and `product inspect` JSON output.
-- Push to the existing draft PR and confirm CI.
+- Smoke-test schema introspection and cache/export JSON output.
+- Push the branch, open a PR, and confirm CI.
 ```
 
 ## Key Risks to Track
@@ -44,8 +42,8 @@ Use this concise summary if the PR body needs a hygiene update:
 
 ## Recommended Next PR Actions
 
-- Keep PR #1 focused on private bootstrap readiness.
-- Confirm the current check set still passes before marking ready for review: `pnpm test:unit`, `pnpm test:integration`, `pnpm check`, and `pnpm build`.
-- Update the PR body if any new docs-only hygiene notes are included before review.
-- Request review only after the branch is aligned with `origin/codex/bootstrap` and CI is green.
-- Open separate branches for v0.2 features such as richer text output, feed export, cache inspection, local search expansion, product inspection hardening, and procurement ranking.
+- Keep the current PR focused on cache inspection, export file output, schemas, tests, and matching docs.
+- Confirm the current check set still passes before merge: `pnpm test`, `pnpm check`, and `pnpm build`.
+- Update the PR body if any new behavior or known limitation changes before review.
+- Merge only after CI is green.
+- Open separate branches for richer text output, schema examples, product inspection hardening, cache maintenance, and procurement ranking.

@@ -30,7 +30,9 @@ Tables:
 
 `search sync` can populate multiple official RSS categories into the same cache. `search local` and `search suggest` only read that cache and never fetch ZAP search result pages.
 
-`feed export` fetches one bounded official RSS feed and formats the result for sharing. `watch export` reads only local watchlist data, does not create a missing cache, and excludes freeform notes unless `--include-notes` is provided.
+`cache info` opens the SQLite cache read-only, reports counts, and does not create a missing cache.
+
+`feed export` fetches one bounded official RSS feed and formats the result for sharing. `watch export` reads only local watchlist data, does not create a missing cache, and excludes freeform notes unless `--include-notes` is provided. Export commands can write to stdout or to an exact local file path via `--out`; they do not overwrite existing files or the active cache database.
 
 ## Output Contract
 

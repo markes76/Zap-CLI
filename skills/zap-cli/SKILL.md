@@ -33,6 +33,7 @@ Current schema-backed commands:
 | --- | --- |
 | `about` | Show purpose, sources, and safety policy. No ZAP page fetch. |
 | `categories list` | List static RSS category metadata. |
+| `cache info` | Inspect local cache path/counts read-only. Does not create missing caches. |
 | `feed list --category <id> --limit <n>` | Fetch one bounded official RSS category feed. |
 | `feed sync --category <id> --limit <n>` | Fetch one bounded official RSS category feed and cache normalized items locally. |
 | `feed search <query> --limit <n>` | Search local SQLite FTS cache only. No ZAP network request. |
@@ -67,6 +68,7 @@ Do not use the CLI, browser automation, or improvised scripts to fetch or scrape
 - `--output json|text|ndjson` and `-o json|text|ndjson` are supported.
 - Export commands support command-specific CSV output: `feed export --output csv` and `watch export --output csv`.
 - On export commands, `--select` filters exported item/row fields while preserving JSON envelope metadata.
+- Export commands support `--out <path>` for exact local file output and return a JSON status object unless `--quiet` is used. Existing files and the active cache database are not overwritten.
 - When stdout is not a TTY, the default output is JSON. In an interactive terminal, the default is text.
 - Use `--output json` for agent parsing. JSON and NDJSON contain no ANSI formatting.
 - `--output ndjson` emits one JSON line per array item; object wrappers such as `{ "commands": [...] }` remain a single JSON line.
@@ -95,6 +97,7 @@ zap feed list --category electric --limit 20 --output json
 zap feed list --category electric --limit 20 --select id,title,modelId,productUrl --output json
 zap feed export --category electric --limit 20 --output ndjson
 zap feed export --category electric --limit 20 --output csv
+zap feed export --category electric --limit 20 --output csv --out exports/feed-electric.csv
 ```
 
 Build a reusable local cache and search it offline:
@@ -182,6 +185,7 @@ zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17" --notes
 zap watch list --output json
 zap watch export --output json
 zap watch export --output csv --include-notes
+zap watch export --output json --out exports/watch.json
 zap watch remove --id <watch-id> --output json
 ```
 
