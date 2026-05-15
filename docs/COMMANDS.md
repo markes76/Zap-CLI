@@ -408,9 +408,9 @@ Output: key, name, description, usage, output contract, and safety statement for
 
 Safety: offline metadata.
 
-## Pre-Public Test Checklist
+## Public Test Checklist
 
-Before making the repo public, run:
+Before public-facing release changes or tags, run:
 
 ```bash
 pnpm test

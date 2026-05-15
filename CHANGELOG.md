@@ -13,6 +13,10 @@
 - Documented the future self-evolving agent model as local preference memory, diagnostics, reviewable skill updates, and PR-based code improvements.
 - Added local adaptive-agent commands for explicit preferences, feedback, suggestions, and skill drafts.
 - Added `docs/COMMANDS.md` with detailed explanations, examples, output contracts, and safety notes for every public command.
+- Rewrote the README for public use with English and Hebrew installation, usage, safety, local-data, and development guidance.
+- Added a public security policy.
+- Added GitHub issue and pull request templates for public community testing.
+- Updated package metadata for a public source repository while keeping npm publication as a later release decision.
 
 ## 0.1.0 - Private Bootstrap
 

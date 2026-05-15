@@ -1,11 +1,11 @@
 # Contributing
 
-This repository is private until the v1 community release.
+This repository is public for community testing. The CLI is still pre-v1, so command schemas may change before the first stable release.
 
 ## Development Rules
 
 - Keep `main` clean.
-- Use feature branches named `codex/<topic>` during private development.
+- Use focused feature branches named by purpose.
 - Update README, ROADMAP, ARCHITECTURE, or CHANGELOG when behavior changes.
 - Do not add code that fetches blocked ZAP search/filter/order/account/checkout/redirect endpoints.
 - Do not commit cookies, session files, `.env`, local SQLite databases, or browser auth state.
