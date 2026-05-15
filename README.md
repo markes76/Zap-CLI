@@ -1,21 +1,34 @@
 # ZAP CLI
 
-Consent-safe consumer CLI for [zap.co.il](https://www.zap.co.il/), built for humans and AI agents that need deterministic shopping research commands.
+Consent-safe consumer CLI for [zap.co.il](https://www.zap.co.il/), built for shoppers, researchers, and AI agents that need deterministic shopping research commands.
 
-This project follows the spirit of [mvanhorn/cli-printing-press](https://github.com/mvanhorn/cli-printing-press): JSON-first command output, local SQLite/FTS sync, schema introspection, clear exit codes, and docs that stay current with the CLI.
+`zap` follows the spirit of [mvanhorn/cli-printing-press](https://github.com/mvanhorn/cli-printing-press): JSON-first output, schema introspection, local SQLite/FTS cache, clear exit codes, and documentation that stays current with the CLI.
 
-The intended agent direction is adaptive but reviewable: local preference memory, diagnostics, skill-update proposals, and code fixes that go through tests and PRs. The CLI should not silently rewrite itself, shared skills, or user data.
+The adaptive-agent direction is local and reviewable: preferences, feedback, diagnostics, and skill drafts are stored locally and surfaced as suggestions. The CLI does not silently rewrite itself, shared skills, or user data.
+
+עברית: [תקציר בעברית](#עברית) נמצא בהמשך הקובץ.
+
+## What It Does
+
+- Fetches official ZAP RSS feeds with conservative limits.
+- Generates ZAP product/search handoff URLs without fetching blocked search pages.
+- Fetches one explicit public product page only when `product inspect --model-id` or `product offers --model-id` is used.
+- Searches cached RSS results locally with SQLite/FTS.
+- Keeps watchlists, preferences, and feedback on your machine.
+- Exports RSS and watchlist data as JSON, NDJSON, or CSV.
+- Gives AI agents stable schemas through `zap schema`.
 
 ## Safety Model
 
 `zap` is intentionally conservative:
 
-- Fetches official ZAP RSS feeds and one explicit public product page when `product inspect --model-id` or `product offers --model-id` is used.
-- Generates product and search handoff URLs without fetching blocked search, filter, sort, account, checkout, redirect, or tracking endpoints.
-- Stores watchlists and synced search data locally.
-- Does not use browser cookies, session extraction, HAR reverse engineering, checkout automation, or private APIs.
+- It uses official RSS feeds and one explicit `model.aspx?modelid=<id>` product page.
+- It does not fetch blocked search, filter, sort, account, checkout, redirect, tracking, private API, cookie/session, or HAR-derived flows.
+- Product-page fetches use validated numeric model ids, omit credentials, and reject redirects.
+- Offer ranking does not infer official import, warranty, stock certainty, checkout totals, or vendor redirect targets.
+- Adaptive-agent commands are local-only and produce reviewable suggestions instead of automatic code or skill changes.
 
-Primary source references:
+Primary references:
 
 - [ZAP About](https://www.zap.co.il/about.aspx)
 - [ZAP Terms](https://www.zap.co.il/takanon.aspx)
@@ -23,26 +36,61 @@ Primary source references:
 - [OpenSearch](https://www.zap.co.il/opensearch.xml)
 - [RSS page](https://www.zap.co.il/rss.aspx)
 
+## Requirements
+
+- Node.js 24 or newer
+- pnpm 10 or newer
+- Git
+
+The project uses Node's built-in SQLite support, so Node 24+ is required.
+
 ## Install
 
+The package is not published to npm yet. Install from GitHub/source:
+
 ```bash
+git clone https://github.com/markes76/Zap-CLI.git
+cd Zap-CLI
 pnpm install
 pnpm build
 ```
 
-Run locally without installing:
-
-```bash
-pnpm dev -- schema list --output json
-```
-
-After building:
+Run directly from the built file:
 
 ```bash
 node dist/cli.js about --output json
 ```
 
-## Commands
+For local development:
+
+```bash
+pnpm dev -- schema list --output json
+```
+
+Optional local global command:
+
+```bash
+pnpm link --global
+zap about --output json
+```
+
+If global linking is not configured on your machine, use `node dist/cli.js ...`.
+
+## Quick Start
+
+```bash
+node dist/cli.js about --output json
+node dist/cli.js categories list --output json
+node dist/cli.js feed list --category electric --limit 5 --output json
+node dist/cli.js search url "iphone 17" --output json
+node dist/cli.js product url --model-id 1253558 --output json
+node dist/cli.js product inspect --model-id 1253558 --timeout 10 --output json
+node dist/cli.js product offers --model-id 1253558 --limit 5 --timeout 10 --output json
+```
+
+Use `zap` instead of `node dist/cli.js` if you linked the package globally.
+
+## Common Commands
 
 ```bash
 zap about
@@ -75,24 +123,31 @@ zap schema list
 zap schema get product-inspect
 ```
 
-Every command is explained in detail in [docs/COMMANDS.md](docs/COMMANDS.md), including when to use it, examples, output shape, and consent-safety notes.
+Every command is explained in [docs/COMMANDS.md](docs/COMMANDS.md), including when to use it, examples, output shape, and safety notes.
 
-Global flags:
+## Global Flags
 
 ```bash
 --output json|text|ndjson
+-o json|text|ndjson
 --quiet
+-q
 --timeout <seconds>
 --cache-dir <path>
 --select id,title,productUrl
 --no-color
 ```
 
-Export commands support their own format sets, including CSV: `feed export --output json|ndjson|csv` and `watch export --output json|csv`.
-On export commands, `--select` filters item or row fields while preserving the JSON envelope metadata.
-Export commands can write exact file paths with `--out <path>` and return a small JSON status object on stdout unless `--quiet` is used. Existing files and the active cache database are not overwritten.
+Export commands support their own format sets:
 
-When stdout is piped, output defaults to JSON. Errors are always emitted as JSON on stderr:
+- `feed export --output json|ndjson|csv`
+- `watch export --output json|csv`
+
+`--out <path>` writes exact file paths for export commands and returns a JSON status object unless `--quiet` is used. Existing files and the active cache database are not overwritten.
+
+## Output Contract
+
+When stdout is piped, output defaults to JSON. Errors always use JSON on stderr:
 
 ```json
 {
@@ -104,9 +159,29 @@ When stdout is piped, output defaults to JSON. Errors are always emitted as JSON
 }
 ```
 
+Stable exit codes are documented through command behavior and tests. Agent workflows should prefer `--output json`.
+
+## Local Data
+
+Default local cache:
+
+```text
+~/.cache/zap-cli/zap.sqlite
+```
+
+Override it with:
+
+```bash
+zap cache info --cache-dir ./tmp-cache --output json
+ZAP_CACHE_DIR=./tmp-cache zap cache info --output json
+```
+
+The cache may contain RSS items, watchlist entries, adaptive-agent preferences, and explicit feedback. Do not commit cache files.
+
 ## Development
 
 ```bash
+pnpm test
 pnpm test:unit
 pnpm test:integration
 pnpm check
@@ -115,8 +190,152 @@ pnpm build
 
 The integration test calls one official RSS feed with a small limit and timeout.
 
-Additional project notes live in `docs/`, including the full command reference, current scorecard, agent reconnaissance, next steps, PR status, and data-sharing/export design.
+## Project Docs
 
-## Release Status
+- [Command reference](docs/COMMANDS.md)
+- [Architecture](ARCHITECTURE.md)
+- [Roadmap](ROADMAP.md)
+- [Data sharing and export design](docs/DATA-SHARING.md)
+- [Scorecard](docs/SCORECARD.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
-This repo is private during early development. v1 will be prepared for the community after the CLI has stable command schemas, CI, release notes, security guidance, and package metadata.
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+---
+
+# עברית
+
+`ZAP CLI` הוא כלי שורת פקודה בטוח וזהיר למחקר קניות באתר [zap.co.il](https://www.zap.co.il/). הכלי מיועד למשתמשים, חוקרים וסוכני AI שצריכים פלט יציב, קריא למכונה, ולא אינטראקטיבי.
+
+הכלי לא מנסה לעקוף את ZAP. הוא משתמש במקורות ציבוריים ומוגבלים: RSS רשמי, יצירת קישורי מעבר, ועמוד מוצר ציבורי אחד רק כאשר המשתמש מבקש זאת במפורש עם `--model-id`.
+
+## מה הכלי עושה
+
+- מושך RSS רשמי של ZAP עם מגבלות שמרניות.
+- יוצר קישורי חיפוש ומוצר בלי למשוך דפי חיפוש חסומים.
+- מושך עמוד מוצר ציבורי אחד בלבד עבור `product inspect` או `product offers`.
+- שומר חיפוש מקומי ב-SQLite/FTS.
+- מנהל רשימת מעקב מקומית.
+- מייצא נתונים ל-JSON, NDJSON או CSV.
+- שומר העדפות ומשוב של המשתמש באופן מקומי בלבד.
+
+## מודל בטיחות
+
+- אין שימוש בעוגיות, סשנים, HAR, התחברות לחשבון, עגלת קניות או checkout.
+- אין משיכה של דפי חיפוש, פילטרים, מיון, חשבון, redirect או API פרטי.
+- דירוג הצעות לא מנחש יבואן רשמי, אחריות, מלאי, מחיר סופי בקופה או יעד redirect של חנות.
+- פקודות ה-agent הן מקומיות בלבד ומציעות שינויים לבדיקה; הן לא משנות קוד או קבצי skill באופן אוטומטי.
+
+## דרישות התקנה
+
+- Node.js 24 ומעלה
+- pnpm 10 ומעלה
+- Git
+
+## התקנה
+
+החבילה עדיין לא מפורסמת ב-npm. מתקינים מהמקור:
+
+```bash
+git clone https://github.com/markes76/Zap-CLI.git
+cd Zap-CLI
+pnpm install
+pnpm build
+```
+
+הרצה ישירה:
+
+```bash
+node dist/cli.js about --output json
+```
+
+הרצה בפיתוח:
+
+```bash
+pnpm dev -- schema list --output json
+```
+
+קישור מקומי אופציונלי לפקודת `zap`:
+
+```bash
+pnpm link --global
+zap about --output json
+```
+
+אם הקישור הגלובלי לא מוגדר במחשב, השתמשו ב-`node dist/cli.js ...`.
+
+## התחלה מהירה
+
+```bash
+node dist/cli.js about --output json
+node dist/cli.js categories list --output json
+node dist/cli.js feed list --category electric --limit 5 --output json
+node dist/cli.js search url "iphone 17" --output json
+node dist/cli.js product url --model-id 1253558 --output json
+node dist/cli.js product inspect --model-id 1253558 --timeout 10 --output json
+node dist/cli.js product offers --model-id 1253558 --limit 5 --timeout 10 --output json
+```
+
+## פקודות נפוצות
+
+```bash
+zap about
+zap categories list
+zap cache info
+zap feed list --category electric --limit 20
+zap search local "iphone 17" --category electric --sort relevance --limit 10
+zap product url --model-id 1253558
+zap product inspect --model-id 1253558
+zap product offers --model-id 1253558 --limit 20 --output json
+zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17"
+zap watch list
+zap schema list
+zap schema get product-offers
+```
+
+כל הפקודות מוסברות בפירוט בקובץ [docs/COMMANDS.md](docs/COMMANDS.md): מתי להשתמש, דוגמאות, מבנה פלט והערות בטיחות.
+
+## דגלים גלובליים
+
+```bash
+--output json|text|ndjson
+--quiet
+--timeout <seconds>
+--cache-dir <path>
+--select id,title,productUrl
+--no-color
+```
+
+עבור סוכני AI וסקריפטים מומלץ להשתמש ב-`--output json`.
+
+## נתונים מקומיים
+
+ברירת המחדל לקובץ cache:
+
+```text
+~/.cache/zap-cli/zap.sqlite
+```
+
+אפשר לשנות מיקום:
+
+```bash
+zap cache info --cache-dir ./tmp-cache --output json
+ZAP_CACHE_DIR=./tmp-cache zap cache info --output json
+```
+
+ה-cache יכול לכלול פריטי RSS, רשימת מעקב, העדפות ומשוב. אין להעלות קבצי cache ל-Git.
+
+## פיתוח ובדיקות
+
+```bash
+pnpm test
+pnpm check
+pnpm build
+```
+
+## רישיון
+
+MIT License. ראו [LICENSE](LICENSE).

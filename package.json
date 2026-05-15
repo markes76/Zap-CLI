@@ -3,14 +3,33 @@
   "version": "0.1.0",
   "description": "Consent-safe consumer CLI for zap.co.il shopping research.",
   "type": "module",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markes76/Zap-CLI.git"
+  },
+  "bugs": {
+    "url": "https://github.com/markes76/Zap-CLI/issues"
+  },
+  "homepage": "https://github.com/markes76/Zap-CLI#readme",
+  "keywords": [
+    "zap",
+    "shopping",
+    "price-comparison",
+    "cli",
+    "agent",
+    "israel"
+  ],
   "bin": {
     "zap": "./dist/cli.js"
   },
   "files": [
     "dist",
+    "docs",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

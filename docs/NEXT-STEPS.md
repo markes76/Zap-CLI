@@ -2,25 +2,26 @@
 
 Last inspected: 2026-05-16.
 
-This document tracks recommended project phases after the private bootstrap PR. It is intentionally focused on release hygiene and should not replace the implementation roadmap in `ROADMAP.md`.
+This document tracks recommended project phases after the private bootstrap and public-readiness PRs. It is intentionally focused on release hygiene and should not replace the implementation roadmap in `ROADMAP.md`.
 
 ## Current Position
 
-- Branch: `codex/command-reference`.
+- Branch: `codex/public-readme`.
 - Base branch: `main`.
-- Main already includes the private bootstrap, offline search expansion, product URL/inspection/offers, watchlist, cache inspection, export commands, and adaptive-agent feedback loop.
-- Current branch adds a detailed command reference and README link so every public command is explained before public testing.
+- Main already includes the bootstrap, offline search expansion, product URL/inspection/offers, watchlist, cache inspection, export commands, adaptive-agent feedback loop, and detailed command reference.
+- Current branch prepares the repository for public testing with bilingual README guidance, security policy, GitHub templates, and package metadata.
 
 ## Recommended Phases
 
-### Phase 0: Command Reference PR Closure
+### Phase 0: Public-Readiness PR Closure
 
-Goal: finish private documentation readiness before broader user testing.
+Goal: finish repository hygiene before changing GitHub visibility to public.
 
-- Keep the scope to command explanations, README links, changelog, and PR status hygiene.
-- Confirm the documented command list matches `zap schema list`.
+- Keep the scope to bilingual installation/usage docs, public metadata, security policy, GitHub templates, and PR status hygiene.
+- Confirm the documented install and smoke-test commands work from the built CLI.
 - Run the full local gate and representative CLI smoke checks.
 - Merge only after the local gate and CI are green and the PR body reflects shipped behavior.
+- After merge, switch repository visibility to public and verify the GitHub setting.
 
 ### Phase 1: Product Inspection Hardening
 
@@ -70,13 +71,12 @@ Goal: expand procurement workflows without leaving the explicit product-page bou
 
 ### Phase 5: v1 Community Release
 
-Goal: prepare the private repo for a public, supportable v1.
+Goal: turn the public testing project into a stable, supportable v1.
 
 - Freeze v1 command schemas and document compatibility expectations.
-- Add community issue templates and a security policy.
-- Review public README, architecture, roadmap, changelog, and package metadata for accuracy.
+- Review community feedback, public README, architecture, roadmap, changelog, and package metadata for accuracy.
 - Prepare release notes and npm publishing metadata.
-- Make the repository public only after the consent boundary, docs, tests, and support policy are reviewed.
+- Decide whether to publish an npm package after install, support, and schema compatibility expectations are ready.
 
 ## Acceptance Gates Before v1
 
@@ -88,7 +88,7 @@ Goal: prepare the private repo for a public, supportable v1.
 - Consent-safe boundaries are reviewed: official RSS fetches only unless a later public surface is explicitly approved; blocked search, filter, account, checkout, redirect, tracking, private API, cookie, session, and HAR-derived workflows remain out of scope.
 - Local data behavior is documented, including cache location, `--cache-dir`, `ZAP_CACHE_DIR`, watchlist storage, and any migration expectations.
 - Public documentation is consistent across README, roadmap, architecture, changelog, scorecard, and skill docs.
-- Security policy, issue templates, license, package metadata, npm files, and release notes are ready for public use.
+- Security policy, issue templates, license, package metadata, npm files, and release notes are ready for stable release use.
 - A fresh clone can install, test, build, and run the documented examples on the supported Node version.
 
 ## Branch and PR Hygiene Rules
