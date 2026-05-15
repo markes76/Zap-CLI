@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { aboutZapCli } from "./about.js";
 import { categories } from "./categories.js";
 import { CliError, exitCodeFor, toErrorEnvelope } from "./errors.js";
+import { createFeedExport, createWatchExport, formatExportOutput, isExportEnvelope } from "./export.js";
 import { formatOutput, resolveOutputFormat, selectFields } from "./output.js";
 import { inspectProduct } from "./product.js";
 import { fetchRssFeed } from "./rss.js";
@@ -34,9 +35,9 @@ export async function runCli(argv: string[], context: RunContext = {}): Promise<
   try {
     const parsed = parseArgs(argv, stdoutIsTTY, env);
     const data = await dispatch(parsed, env);
-    const selected = selectFields(data, parsed.global.select);
+    const selected = isExportEnvelope(data) ? data : selectFields(data, parsed.global.select);
     return {
-      stdout: parsed.global.quiet ? "" : formatOutput(selected, { format: parsed.global.format }),
+      stdout: parsed.global.quiet ? "" : formatCliOutput(selected, parsed.global.format, parsed.global.select),
       stderr: "",
       exitCode: 0
     };
@@ -47,6 +48,14 @@ export async function runCli(argv: string[], context: RunContext = {}): Promise<
       exitCode: exitCodeFor(error)
     };
   }
+}
+
+function formatCliOutput(data: unknown, format: OutputFormat, selectedFields?: string[]): string {
+  if (isExportEnvelope(data)) {
+    return formatExportOutput(data, format, selectedFields);
+  }
+
+  return formatOutput(data, { format });
 }
 
 async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unknown> {
@@ -68,6 +77,14 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
     const category = requireFlag(parsed, "category", "Run zap schema get feed-list for command details.");
     const limit = optionalPositiveInt(parsed, "limit", 20);
     return fetchRssFeed(category, { limit, timeoutMs: parsed.global.timeoutMs });
+  }
+
+  if (noun === "feed" && verb === "export") {
+    ensureNoExtraArgs(rest, "feed export");
+    const category = requireFlag(parsed, "category", "Run zap schema get feed-export for command details.");
+    const limit = optionalPositiveInt(parsed, "limit", 20);
+    const items = await fetchRssFeed(category, { limit, timeoutMs: parsed.global.timeoutMs });
+    return createFeedExport(category, items);
   }
 
   if (noun === "feed" && verb === "sync") {
@@ -231,6 +248,22 @@ async function dispatch(parsed: ParsedArgs, env: NodeJS.ProcessEnv): Promise<unk
     }
   }
 
+  if (noun === "watch" && verb === "export") {
+    ensureNoExtraArgs(rest, "watch export");
+    const databasePath = cachePath(parsed.global, env);
+    const includeNotes = optionalBooleanFlag(parsed, "include-notes");
+    if (!existsSync(databasePath)) {
+      return createWatchExport([], undefined, { includeNotes });
+    }
+
+    const store = await openStore(parsed.global, env, { readOnly: true });
+    try {
+      return createWatchExport(store.listWatchItems(), undefined, { includeNotes });
+    } finally {
+      store.close();
+    }
+  }
+
   if (noun === "watch" && verb === "remove") {
     const id = requireFlag(parsed, "id", "Run zap schema get watch-remove for command details.");
     const store = await openStore(parsed.global, env);
@@ -314,7 +347,8 @@ function parseArgs(argv: string[], stdoutIsTTY: boolean, env: NodeJS.ProcessEnv)
     positional.push(arg);
   }
 
-  const requestedFormat = parseOutputFormat(optionalFlagFromRecord(flags, "output"));
+  const outputPolicy = outputFormatPolicy(positional);
+  const requestedFormat = parseOutputFormat(optionalFlagFromRecord(flags, "output"), outputPolicy);
   const timeoutMs = optionalPositiveNumberFromRecord(flags, "timeout", 30) * 1000;
   const select = optionalFlagFromRecord(flags, "select")
     ?.split(",")
@@ -323,7 +357,7 @@ function parseArgs(argv: string[], stdoutIsTTY: boolean, env: NodeJS.ProcessEnv)
 
   const cacheDir = optionalFlagFromRecord(flags, "cache-dir") ?? env.ZAP_CACHE_DIR;
   const global: GlobalOptions = {
-    format: resolveOutputFormat(requestedFormat, stdoutIsTTY),
+    format: requestedFormat ?? outputPolicy.defaultFormat ?? resolveOutputFormat(requestedFormat, stdoutIsTTY),
     quiet: flags.quiet === true,
     timeoutMs,
     noColor: flags["no-color"] === true,
@@ -378,6 +412,29 @@ function optionalNumber(parsed: ParsedArgs, name: string): number | undefined {
   return numberValue;
 }
 
+function optionalBooleanFlag(parsed: ParsedArgs, name: string): boolean {
+  const value = parsed.flags[name];
+  if (value === undefined) {
+    return false;
+  }
+  if (value === true) {
+    return true;
+  }
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  throw new CliError("INVALID_ARGUMENTS", `--${name} must be true or false when a value is provided.`);
+}
+
+function ensureNoExtraArgs(rest: string[], commandName: string): void {
+  if (rest.length > 0) {
+    throw new CliError("INVALID_ARGUMENTS", `Unexpected argument "${rest[0]}" for ${commandName}.`);
+  }
+}
+
 function optionalPositiveNumberFromRecord(flags: Record<string, string | boolean>, name: string, defaultValue: number): number {
   const raw = optionalFlagFromRecord(flags, name);
   if (raw === undefined) {
@@ -390,18 +447,64 @@ function optionalPositiveNumberFromRecord(flags: Record<string, string | boolean
   return numberValue;
 }
 
-function parseOutputFormat(value: string | undefined): OutputFormat | undefined {
+interface OutputFormatPolicy {
+  allowed: OutputFormat[];
+  commandName?: string;
+  defaultFormat?: OutputFormat;
+}
+
+function outputFormatPolicy(positional: string[]): OutputFormatPolicy {
+  const [noun, verb] = positional;
+  if (noun === "feed" && verb === "export") {
+    return { allowed: ["json", "ndjson", "csv"], commandName: "feed export", defaultFormat: "json" };
+  }
+  if (noun === "watch" && verb === "export") {
+    return { allowed: ["json", "csv"], commandName: "watch export", defaultFormat: "json" };
+  }
+  return { allowed: ["json", "text", "ndjson"] };
+}
+
+function parseOutputFormat(value: string | undefined, policy: OutputFormatPolicy): OutputFormat | undefined {
   if (!value) {
     return undefined;
   }
-  if (value === "json" || value === "text" || value === "ndjson") {
+
+  const format = toOutputFormat(value);
+  if (format && policy.allowed.includes(format)) {
+    return format;
+  }
+
+  const commandSuffix = policy.commandName ? ` for ${policy.commandName}` : "";
+  throw new CliError("INVALID_ARGUMENTS", `Unsupported output format "${value}"${commandSuffix}.`, outputFormatHint(policy.allowed));
+}
+
+function toOutputFormat(value: string): OutputFormat | undefined {
+  if (value === "json" || value === "text" || value === "ndjson" || value === "csv") {
     return value;
   }
-  throw new CliError("INVALID_ARGUMENTS", `Unsupported output format "${value}".`, "Use json, text, or ndjson.");
+  return undefined;
+}
+
+function outputFormatHint(formats: OutputFormat[]): string {
+  if (formats.length === 1) {
+    return `Use ${formats[0]}.`;
+  }
+
+  const last = formats[formats.length - 1];
+  const rest = formats.slice(0, -1).join(", ");
+  return formats.length === 2 ? `Use ${rest} or ${last}.` : `Use ${rest}, or ${last}.`;
 }
 
 function isBooleanFlag(key: string): boolean {
-  return key === "quiet" || key === "no-color" || key === "yes" || key === "dry-run" || key === "verbose" || key === "help";
+  return (
+    key === "quiet" ||
+    key === "no-color" ||
+    key === "yes" ||
+    key === "dry-run" ||
+    key === "verbose" ||
+    key === "help" ||
+    key === "include-notes"
+  );
 }
 
 function isOptionToken(value: string): boolean {

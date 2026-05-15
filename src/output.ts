@@ -18,7 +18,23 @@ export function formatOutput(data: unknown, options: FormatOptions): string {
     return rows.map((row) => JSON.stringify(row)).join("\n");
   }
 
+  if (options.format === "csv") {
+    const rows = Array.isArray(data) ? objectRows(data) : objectRows([data]);
+    const columns = rows[0] ? Object.keys(rows[0]) : [];
+    return formatCsvRows(rows, columns);
+  }
+
   return formatText(data);
+}
+
+export type CsvScalar = string | number | boolean | null | undefined;
+
+export function formatCsvRows(rows: Array<Record<string, CsvScalar>>, columns: string[]): string {
+  const lines = [
+    columns.map(escapeCsvValue).join(","),
+    ...rows.map((row) => columns.map((column) => escapeCsvValue(row[column])).join(","))
+  ];
+  return `${lines.join("\n")}\n`;
 }
 
 export function selectFields(data: unknown, fields: string[] | undefined): unknown {
@@ -46,6 +62,30 @@ function selectObjectFields(data: unknown, fields: string[]): unknown {
     }
   }
   return selected;
+}
+
+function objectRows(values: unknown[]): Array<Record<string, CsvScalar>> {
+  const rows: Array<Record<string, CsvScalar>> = [];
+  for (const value of values) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      continue;
+    }
+    rows.push(value as Record<string, CsvScalar>);
+  }
+  return rows;
+}
+
+function escapeCsvValue(value: CsvScalar): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  const text = formulaSafeCsvText(String(value));
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
+}
+
+function formulaSafeCsvText(value: string): string {
+  return /^\s*[=+\-@]/.test(value) ? `'${value}` : value;
 }
 
 function formatText(data: unknown): string {

@@ -14,6 +14,8 @@
 - `product inspect --model-id` fetches one validated public product page with no credentials or redirects.
 - `search sync` fetches only official RSS feeds and supports `all` or comma-separated supported categories.
 - `search local` and `search suggest` read the local cache only and never fetch search result pages.
+- `feed export` fetches only one bounded official RSS feed.
+- `watch export` reads local watchlist data only and excludes freeform notes unless explicitly requested.
 - Search URL commands and product URL commands generate handoff URLs.
 - Blocked search/filter/order/account/checkout/redirect endpoints are not fetched.
 - Local watchlist and cache data stay on the user's machine.

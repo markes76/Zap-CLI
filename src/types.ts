@@ -1,4 +1,4 @@
-export type OutputFormat = "json" | "text" | "ndjson";
+export type OutputFormat = "json" | "text" | "ndjson" | "csv";
 
 export interface RssItem {
   id: string;
@@ -124,6 +124,36 @@ export interface WatchItemInput {
   targetPriceIls?: number | null;
   notes?: string | null;
 }
+
+export type ExportRecordType = "rss_item" | "watch_item";
+
+export interface ExportProvenance {
+  kind: "cli_verified";
+  source: "official_rss" | "watchlist";
+  sourceUrl?: string;
+  fetchedAt: string;
+}
+
+export interface FeedExportEnvelope {
+  schemaVersion: string;
+  recordType: "rss_item";
+  category: string;
+  exportedAt: string;
+  sourceUrl: string;
+  provenance: ExportProvenance & { source: "official_rss"; sourceUrl: string };
+  items: RssItem[];
+}
+
+export interface WatchExportEnvelope {
+  schemaVersion: string;
+  recordType: "watch_item";
+  exportedAt: string;
+  provenance: ExportProvenance & { source: "watchlist" };
+  notesIncluded: boolean;
+  items: WatchItem[];
+}
+
+export type ExportEnvelope = FeedExportEnvelope | WatchExportEnvelope;
 
 export interface GlobalOptions {
   format: OutputFormat;

@@ -38,9 +38,9 @@ Goal: make the new explicit model-page inspection command reliable enough for pr
 Goal: improve usability without changing the consent boundary.
 
 - Add richer text output for human terminals while preserving JSON/NDJSON defaults for agent usage.
-- Add `zap feed export --output ndjson`.
 - Add cache inspection commands.
 - Add command examples to schema output.
+- Add `--out <path>` for export commands.
 - Update command schemas, tests, CLI smoke checks, and docs in the same PR as each behavior change.
 
 ### Phase 3: Local Search Expansion

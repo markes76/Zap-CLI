@@ -33,6 +33,14 @@ export const commandSchemas: CommandSchema[] = [
     safety: "Fetches only official /xmls/general/rss.aspx category feeds."
   },
   {
+    key: "feed-export",
+    name: "feed export",
+    description: "Export a bounded official ZAP RSS category feed.",
+    usage: "zap feed export --category electric --limit 20 --output json|ndjson|csv",
+    output: "JSON envelope with schemaVersion, recordType=rss_item, category, exportedAt, sourceUrl, provenance, and items; NDJSON rows include nested provenance; CSV rows include flattened provenance fields plus scalar RSS item fields.",
+    safety: "Fetches only official /xmls/general/rss.aspx category feeds."
+  },
+  {
     key: "feed-sync",
     name: "feed sync",
     description: "Fetch a bounded official RSS feed and cache it in local SQLite.",
@@ -111,6 +119,14 @@ export const commandSchemas: CommandSchema[] = [
     usage: "zap watch list",
     output: "Local watch items.",
     safety: "Offline local read."
+  },
+  {
+    key: "watch-export",
+    name: "watch export",
+    description: "Export local watchlist items.",
+    usage: "zap watch export --output json|csv [--include-notes]",
+    output: "JSON envelope with schemaVersion, recordType=watch_item, exportedAt, provenance, notesIncluded, and items; notes are null unless --include-notes is used. CSV rows include flattened provenance fields plus scalar watch item fields.",
+    safety: "Offline local read; no ZAP network request."
   },
   {
     key: "watch-remove",

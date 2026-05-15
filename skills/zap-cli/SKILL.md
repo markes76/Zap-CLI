@@ -36,6 +36,7 @@ Current schema-backed commands:
 | `feed list --category <id> --limit <n>` | Fetch one bounded official RSS category feed. |
 | `feed sync --category <id> --limit <n>` | Fetch one bounded official RSS category feed and cache normalized items locally. |
 | `feed search <query> --limit <n>` | Search local SQLite FTS cache only. No ZAP network request. |
+| `feed export --category <id> --limit <n> --output json|ndjson|csv` | Export one bounded official RSS feed. |
 | `search sync --category <id|all|comma-list> --limit <n>` | Fetch bounded official RSS feeds and populate the local cache. |
 | `search local <query> --category <id|comma-list> --sort relevance|newest` | Search local cache only with optional filters. |
 | `search suggest <query>` | Return local cache candidates plus a generated ZAP search handoff URL. |
@@ -43,6 +44,7 @@ Current schema-backed commands:
 | `product inspect --model-id <id>` | Fetch one validated public product page and extract static JSON-LD/product metadata. |
 | `search url <query>` | Generate official search handoff URL with `fetched: false`. Does not fetch blocked search pages. |
 | `watch add/list/remove` | Manage local SQLite watchlist items. |
+| `watch export --output json|csv [--include-notes]` | Export local watchlist data. Notes are excluded unless requested. |
 | `schema list/get` | Read offline command contracts. |
 
 Confirm details with `zap schema get product-inspect --output json` before relying on field-level behavior.
@@ -63,6 +65,8 @@ Do not use the CLI, browser automation, or improvised scripts to fetch or scrape
 ## Output Expectations
 
 - `--output json|text|ndjson` and `-o json|text|ndjson` are supported.
+- Export commands support command-specific CSV output: `feed export --output csv` and `watch export --output csv`.
+- On export commands, `--select` filters exported item/row fields while preserving JSON envelope metadata.
 - When stdout is not a TTY, the default output is JSON. In an interactive terminal, the default is text.
 - Use `--output json` for agent parsing. JSON and NDJSON contain no ANSI formatting.
 - `--output ndjson` emits one JSON line per array item; object wrappers such as `{ "commands": [...] }` remain a single JSON line.
@@ -89,6 +93,8 @@ Fetch current official RSS candidates without touching blocked search pages:
 ```bash
 zap feed list --category electric --limit 20 --output json
 zap feed list --category electric --limit 20 --select id,title,modelId,productUrl --output json
+zap feed export --category electric --limit 20 --output ndjson
+zap feed export --category electric --limit 20 --output csv
 ```
 
 Build a reusable local cache and search it offline:
@@ -174,8 +180,12 @@ Watchlists are local user state. They do not monitor live prices unless the user
 ```bash
 zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17" --notes "wait for sale" --output json
 zap watch list --output json
+zap watch export --output json
+zap watch export --output csv --include-notes
 zap watch remove --id <watch-id> --output json
 ```
+
+`watch export` excludes freeform notes by default and sets `notesIncluded: false`. Use `--include-notes` only when the notes are safe to share.
 
 Watch item shape:
 
