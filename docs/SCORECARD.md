@@ -7,6 +7,7 @@
 - Commands do not prompt.
 - No ANSI formatting in JSON/NDJSON output.
 - Command contracts are available through `zap schema`.
+- Human command explanations are available in `docs/COMMANDS.md`.
 
 ## ZAP Consent Boundary
 
