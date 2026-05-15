@@ -48,6 +48,7 @@ zap categories list
 zap feed list --category electric --limit 20
 zap feed sync --category electric --limit 20
 zap feed search Wiim --limit 10
+zap feed export --category electric --limit 20 --output csv
 zap search sync --category electric,comp --limit 20
 zap search local "iphone 17" --category electric --sort relevance --limit 10
 zap search suggest "iphone 17" --limit 5
@@ -56,6 +57,8 @@ zap product inspect --model-id 1253558
 zap search url "iphone 17"
 zap watch add --model-id 1253558 --target-price 2500 --title "iPhone 17"
 zap watch list
+zap watch export --output json
+zap watch export --output csv --include-notes
 zap watch remove --id <watch-id>
 zap schema list
 zap schema get product-inspect
@@ -71,6 +74,9 @@ Global flags:
 --select id,title,productUrl
 --no-color
 ```
+
+Export commands support their own format sets, including CSV: `feed export --output json|ndjson|csv` and `watch export --output json|csv`.
+On export commands, `--select` filters item or row fields while preserving the JSON envelope metadata.
 
 When stdout is piped, output defaults to JSON. Errors are always emitted as JSON on stderr:
 

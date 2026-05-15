@@ -24,7 +24,7 @@ This document defines how `zap` should share data with humans, scripts, and agen
 ## Core Decisions
 
 - Existing command output remains compatible: `--output json|text|ndjson`, default JSON when stdout is not a TTY, and JSON error envelopes on stderr.
-- Export commands add `--out <path>` for file writing. Without `--out`, they write to stdout like existing commands.
+- Current export commands write to stdout. `--out <path>` is a future file-output feature.
 - JSON is the canonical lossless format for all entities and reports.
 - NDJSON is the canonical streaming format for homogeneous row collections such as RSS items, watch items, and vendor offers.
 - Markdown is the default human report format for review in Git, issues, and agent transcripts.
@@ -163,12 +163,14 @@ Add for export/report commands:
 
 ```bash
 --output json|ndjson|markdown|csv|html
---out <path>
 --privacy public|private
 --include-notes
 --include-local-paths
 --schema-version v1
 ```
+
+Current export commands support only the formats listed in their schemas. `feed export` supports `json|ndjson|csv`; `watch export` supports `json|csv`. `--out`, `--privacy`, Markdown, HTML, and report exports remain future work.
+For JSON export envelopes, `--select` applies to `items` while preserving envelope metadata. For NDJSON and CSV exports, `--select` applies to row fields.
 
 Defaults:
 
@@ -181,30 +183,29 @@ Defaults:
 
 ### Feed Export
 
-Export official RSS items from a live bounded fetch or the local cache.
+Export official RSS items from one live bounded official RSS category feed.
 
 ```bash
-zap feed export --category electric --limit 50 --output json --out exports/rss/zap-rss-electric-20260515T083000Z.json
-zap feed export --category electric --limit 50 --output ndjson --out exports/rss/zap-rss-electric-20260515T083000Z.ndjson
-zap feed export --query "iphone" --from-cache --output csv --out exports/rss/zap-rss-iphone-20260515T083000Z.csv
+zap feed export --category electric --limit 50 --output json
+zap feed export --category electric --limit 50 --output ndjson
+zap feed export --category electric --limit 50 --output csv
 ```
 
-Design:
+Current behavior:
 
 - `--category` fetches the official RSS feed, like `feed list`.
-- `--from-cache` reads local SQLite cache, like `feed search`.
-- `--query` requires `--from-cache`.
 - JSON output uses an envelope with `items`.
 - NDJSON/CSV output emits rows.
+- `--out`, `--from-cache`, and `--query` are future features.
 
 ### Watch Export
 
 Export local watchlist state.
 
 ```bash
-zap watch export --output json --out exports/watch/zap-watchlist-20260515T083000Z.json
-zap watch export --output csv --out exports/watch/zap-watchlist-20260515T083000Z.csv
-zap watch export --output markdown --out exports/watch/zap-watchlist-20260515T083000Z.md
+zap watch export --output json
+zap watch export --output csv
+zap watch export --output csv --include-notes
 ```
 
 Design:
@@ -212,6 +213,7 @@ Design:
 - Default export excludes `notes`.
 - `--include-notes` includes freeform notes and sets `notesIncluded: true` in the manifest/envelope.
 - CSV includes one row per watch item.
+- Markdown and `--out` are future features.
 
 ### Product Inspection
 
@@ -336,6 +338,7 @@ exports/reports/zap-procurement-1253558-20260515T083000Z/
 ### Common Provenance
 
 Use provenance wherever a fact may be interpreted as evidence.
+Current v0.2 export commands emit `kind`, `source`, `sourceUrl` where applicable, and `fetchedAt`; future report formats may also include the exact command string.
 
 ```json
 {
@@ -436,7 +439,7 @@ Public export row shape:
 }
 ```
 
-Private exports with `--include-notes --privacy private` may include:
+Current exports with `--include-notes` may include:
 
 ```json
 {
@@ -754,6 +757,7 @@ Exports must follow these constraints:
 - Recommendations must cite evidence ids and list unknowns that require user confirmation.
 - HTML must not include remote JavaScript, analytics, external fonts, or tracking pixels.
 - CSV exports must not silently serialize nested private data into a cell.
+- CSV cells that begin with spreadsheet formula trigger characters are prefixed with an apostrophe.
 - Redirect URLs may be emitted as handoff links but never resolved by the CLI.
 
 ## v1 Roadmap
@@ -763,10 +767,9 @@ The v1 export surface should be conservative and compatible with the current CLI
 Required for v1:
 
 - Keep existing JSON and NDJSON command behavior stable.
-- Add `feed export` for JSON and NDJSON from official RSS and local cache.
-- Add `watch export` for JSON and CSV with notes excluded by default.
+- Harden current `feed export` JSON/NDJSON/CSV behavior from official RSS.
+- Harden current `watch export` JSON/CSV behavior with notes excluded by default.
 - Add `--out <path>` to export commands only.
-- Add schema entries for export commands through `zap schema`.
 - Document JSON schemas for RSS item and watch item exports.
 - Add tests for stdout export, file export, privacy defaults, and CSV escaping.
 - Keep Markdown/HTML procurement report rendering out of v1 until product inspection and procurement report JSON schemas are stable.

@@ -5,6 +5,8 @@
 - Added `search sync` for bounded multi-category official RSS cache population.
 - Added `search local` for offline cache search with optional category filter and sort mode.
 - Added `search suggest` for local candidates plus generated ZAP search handoff URLs.
+- Added `feed export` for JSON, NDJSON, and CSV exports from bounded official RSS feeds.
+- Added `watch export` for JSON and CSV local watchlist exports, with notes excluded unless `--include-notes` is used.
 
 ## 0.1.0 - Private Bootstrap
 

@@ -6,16 +6,16 @@
 - Ship consent-safe RSS, URL generation, watchlist, schema, and local SQLite/FTS commands.
 - Ship bounded `product inspect --model-id` for one explicit public product page.
 - Ship `search sync`, `search local`, and `search suggest` for better offline discovery from official RSS/cache data.
+- Ship first export commands for RSS and local watchlist data.
 - Keep docs and changelog updated with each feature branch.
 - Verify JSON-first behavior for agent usage.
 
 ## v0.2
 
 - Add richer text output for human terminals.
-- Add `zap feed export --output ndjson`.
 - Add cache inspection commands.
 - Add command examples to schema output.
-- Add first export commands for RSS and watchlist data.
+- Add `--out <path>` for export commands.
 
 ## v0.3 Procurement Research
 
